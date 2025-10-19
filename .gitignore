@@ -43,6 +43,7 @@ next-env.d.ts
 # Anchor
 /anchor/.anchor
 /anchor/target/debug
+/anchor/target
 /anchor/target/deploy
 /anchor/target/release
 /anchor/target/sbf-solana-solana
