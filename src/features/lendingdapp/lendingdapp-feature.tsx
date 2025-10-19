@@ -1,36 +1,44 @@
 import { useSolana } from '@/components/solana/use-solana'
 import { WalletDropdown } from '@/components/wallet-dropdown'
 import { AppHero } from '@/components/app-hero'
-import { LendingdappUiButtonInitialize } from './ui/lendingdapp-ui-button-initialize'
-import { LendingdappUiList } from './ui/lendingdapp-ui-list'
-import { LendingdappUiProgramExplorerLink } from './ui/lendingdapp-ui-program-explorer-link'
-import { LendingdappUiProgramGuard } from './ui/lendingdapp-ui-program-guard'
+import { LendingUiInitializeBank as LendingdappUiInitializeBank } from './ui/lendingdapp-ui-initialize-bank'
+import { LendingdappUiInitializeAccount } from './ui/lendingdapp-ui-initialize-account'
+import { LendingdappUiDashboard } from './ui/lendingdapp-ui-dashboard'
+import { useLendingdappUserAccount } from './data-access/use-lendingdapp-user-account'
 
 export default function LendingdappFeature() {
   const { account } = useSolana()
+  const { data: userAccount } = useLendingdappUserAccount(account?.address)
 
   return (
-    <LendingdappUiProgramGuard>
+    <div>
       <AppHero
-        title="Lendingdapp"
+        title="Lending Protocol"
         subtitle={
           account
-            ? "Initialize a new lendingdapp onchain by clicking the button. Use the program's methods (increment, decrement, set, and close) to change the state of the account."
-            : 'Select a wallet to run the program.'
+            ? "Manage your lending positions"
+            : 'Connect wallet to start lending'
         }
       >
-        <p className="mb-6">
-          <LendingdappUiProgramExplorerLink />
-        </p>
-        {account ? (
-          <LendingdappUiButtonInitialize account={account} />
-        ) : (
-          <div style={{ display: 'inline-block' }}>
-            <WalletDropdown />
+        {!account ? (
+          <WalletDropdown />
+        ) : !userAccount ? (
+          <div className="space-y-6">
+            <LendingdappUiInitializeBank account={account} />
+            <LendingdappUiInitializeAccount account={account} />
           </div>
-        )}
+        ) : userAccount ? (
+          <LendingdappUiDashboard
+            account={account}
+            userAccount={{
+              depositedSol: Number(userAccount.depositedSol),
+              borrowedSol: Number(userAccount.borrowedSol),
+              depositedUsdc: Number(userAccount.depositedUsdc),
+              borrowedUsdc: Number(userAccount.borrowedUsdc),
+            }}
+          />
+        ) : null}
       </AppHero>
-      {account ? <LendingdappUiList account={account} /> : null}
-    </LendingdappUiProgramGuard>
+    </div>
   )
 }

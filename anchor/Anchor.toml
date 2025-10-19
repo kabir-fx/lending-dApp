@@ -7,7 +7,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-lendingdapp = "Count3AcZucFDPSFBAeHkQ6AvttieKUkyJ8HiQGhQwe"
+lending_protocol = "9CoY42r3y5WFDJjQX97e9m9THcVGpvuVSKjBjGkiksMR"
 
 [registry]
 url = "https://api.apr.dev"

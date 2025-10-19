@@ -4,5 +4,5 @@ import { createCodamaConfig } from './src/create-codama-config.js'
 
 export default createCodamaConfig({
   clientJs: 'anchor/src/client/js/generated',
-  idl: 'target/idl/lendingdapp.json',
+  idl: 'target/idl/lending_protocol.json',
 })

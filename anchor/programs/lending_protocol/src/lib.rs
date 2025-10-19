@@ -11,7 +11,7 @@ mod errors;
 mod instructions;
 mod state;
 
-declare_id!("6awyXWuEkqhNWpmPRJpzZXuz8z8KVzh347jjSqywuokC");
+declare_id!("9CoY42r3y5WFDJjQX97e9m9THcVGpvuVSKjBjGkiksMR");
 
 #[program]
 pub mod lending_protocol {
