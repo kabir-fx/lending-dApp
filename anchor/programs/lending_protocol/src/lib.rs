@@ -14,7 +14,7 @@ mod state;
 declare_id!("6awyXWuEkqhNWpmPRJpzZXuz8z8KVzh347jjSqywuokC");
 
 #[program]
-pub mod lending {
+pub mod lending_protocol {
     use super::*;
 
     pub fn initialize_bank(
