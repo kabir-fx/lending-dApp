@@ -6,22 +6,44 @@ import { getWithdrawInstructionAsync } from '@project/anchor'
 import { toast } from 'sonner'
 import { toastTx } from '@/components/toast-tx'
 import { Connection, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js'
-import { NATIVE_MINT } from '@solana/spl-token'
+import { useEffect, useState } from 'react'
+
+// Load config from the setup script
+function useBanksConfig() {
+  const [config, setConfig] = useState<any>(null)
+
+  useEffect(() => {
+    fetch('/anchor/banks-config.json')
+      .then(res => res.json())
+      .then(setConfig)
+      .catch(() => setConfig(null))
+  }, [])
+
+  return config
+}
 
 export function useLendingdappWithdrawMutation({ account }: { account: UiWalletAccount }) {
   const { cluster } = useSolana()
   const queryClient = useQueryClient()
   const signer = useWalletUiSigner({ account })
+  const banksConfig = useBanksConfig()
 
   return useMutation({
-    mutationFn: async (amountSol: number) => {
+    mutationFn: async ({ amount, token }: { amount: number; token: 'SOL' | 'USDC' }) => {
+      if (!banksConfig) {
+        throw new Error('Bank config not loaded')
+      }
+
       try {
         const connection = new Connection('http://127.0.0.1:8899', 'confirmed')
 
+        const mintAddress = address(token === 'SOL' ? banksConfig.SOL_MINT : banksConfig.USDC_MINT)
+        const amountInSmallestUnit = BigInt(Math.floor(amount * (token === 'SOL' ? 1_000_000_000 : 1_000_000)))
+
         const gillIx = await getWithdrawInstructionAsync({
           signer,
-          mint: address(NATIVE_MINT.toString()),
-          amountToWithdraw: BigInt(Math.floor(amountSol * 1_000_000_000)),
+          mint: mintAddress,
+          amountToWithdraw: amountInSmallestUnit
         })
 
         const web3Ix = new TransactionInstruction({
@@ -46,7 +68,6 @@ export function useLendingdappWithdrawMutation({ account }: { account: UiWalletA
         await connection.confirmTransaction(signature, 'confirmed')
         return signature
       } catch (e) {
-        // eslint-disable-next-line no-console
         console.error('Withdraw tx error:', e)
         throw e
       }
@@ -54,10 +75,11 @@ export function useLendingdappWithdrawMutation({ account }: { account: UiWalletA
     onSuccess: async (tx) => {
       toastTx(tx)
       await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'user', { cluster }] })
+      await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'banks', { cluster }] })
     },
-    onError: (e) => toast.error(`Withdraw failed: ${e instanceof Error ? e.message : String(e)}`),
+    onError: (error) => {
+      console.error('Withdraw error:', error)
+      toast.error(`Failed to withdraw: ${error instanceof Error ? error.message : String(error)}`)
+    },
   })
 }
-
-
-

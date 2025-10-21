@@ -8,6 +8,8 @@ import { toastTx } from '@/components/toast-tx'
 import { toast } from 'sonner'
 import { NATIVE_MINT } from '@solana/spl-token'
 import { Connection, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js'
+import { createMintToInstruction } from '@solana/spl-token'
+import { useEffect, useState } from 'react'
 
 // A mutation is a function that changes data on the blockchain. It's like a "write" operation.
 // mutation hook for initializing the lendingdapp
@@ -131,6 +133,90 @@ export function useLendingdappInitializeAccountMutation({ account }: { account: 
       // eslint-disable-next-line no-console
       console.error('Initialize account error:', e)
       toast.error(`Failed to initialize account: ${e instanceof Error ? e.message : String(e)}`)
+    },
+  })
+}
+
+// Load config from the setup script
+function useBanksConfig() {
+  const [config, setConfig] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/anchor/banks-config.json')
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+        }
+        return res.json()
+      })
+      .then(data => {
+        setConfig(data)
+        setError(null)
+      })
+      .catch(err => {
+        console.error('Failed to load banks config:', err)
+        setError(err.message)
+        setConfig(null)
+      })
+  }, [])
+
+  return { config, error }
+}
+
+export function useLendingdappTokenAirdropMutation({ account }: { account: UiWalletAccount }) {
+  const { cluster } = useSolana()
+  const queryClient = useQueryClient()
+  const signer = useWalletUiSigner({ account })
+  const signAndSend = useWalletUiSignAndSend()
+  const { config: banksConfig } = useBanksConfig()
+
+  return useMutation({
+    mutationFn: async ({ amount }: { amount: number }) => {
+      if (!banksConfig?.SOL_MINT || !banksConfig?.USDC_MINT) {
+        throw new Error('Bank config not found')
+      }
+
+      const connection = new Connection('http://127.0.0.1:8899', 'confirmed')
+
+      // Create instructions to mint SOL and USDC tokens
+      const instructions = []
+
+      // Mint SOL tokens
+      const solMintIx = createMintToInstruction(
+        new PublicKey(banksConfig.SOL_MINT),
+        await signer.getAssociatedTokenAddress(new PublicKey(banksConfig.SOL_MINT)),
+        signer.address,
+        BigInt(Math.round(amount * 1_000_000_000)) // amount in lamports
+      )
+      instructions.push(solMintIx)
+
+      // Mint USDC tokens
+      const usdcMintIx = createMintToInstruction(
+        new PublicKey(banksConfig.USDC_MINT),
+        await signer.getAssociatedTokenAddress(new PublicKey(banksConfig.USDC_MINT)),
+        signer.address,
+        BigInt(Math.round(amount * 1_000_000)) // amount in smallest unit
+      )
+      instructions.push(usdcMintIx)
+
+      // Send transaction
+      const tx = new Transaction().add(...instructions)
+      const { blockhash } = await connection.getLatestBlockhash()
+      tx.recentBlockhash = blockhash
+      tx.feePayer = signer.address
+
+      const signedTx = await signAndSend(tx, signer)
+      return signedTx
+    },
+    onSuccess: async (tx) => {
+      toastTx(tx)
+      await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'user', { cluster }] })
+      toast.success(`Airdropped ${tx ? 'tokens' : 'failed'}`)
+    },
+    onError: (error) => {
+      console.error('Token airdrop error:', error)
+      toast.error(`Failed to airdrop tokens: ${error instanceof Error ? error.message : String(error)}`)
     },
   })
 }

@@ -89,20 +89,20 @@ pub fn process_withdraw(ctx: Context<Withdraw>, amount_to_withdraw: u64) -> Resu
     // Get the current time diffrance between the last time the user deposited and the current time
     let time_diff = Clock::get()?.unix_timestamp - user_account.last_updated;
 
-    // Cal. the total deposits after the interest has been applied, taking into the consideration the APY on the bank.
+    // Calculate the total deposits after interest has been applied
     bank_account.total_deposits = (bank_account.total_deposits as f64
         * E.powf(time_diff as f64 * bank_account.interest_rate as f64))
         as u64;
 
-    // Cal. the current value of 1 share
-    let value_per_share =
+    // Calculate the current value of 1 share (unused but kept for clarity)
+    let _value_per_share =
         bank_account.total_deposits as f64 / bank_account.total_deposits_shares as f64;
 
-    // Cal. the user's shares based on the current share value
-    let current_user_shares = deposited_tokens as f64 / value_per_share;
+    // Calculate the current value of user's deposited tokens after interest
+    let current_deposited_value = deposited_tokens as f64 * E.powf(time_diff as f64 * bank_account.interest_rate as f64);
 
-    // Now that we have current user's shares after taking interest into consideration we can perform a check to ensure they are not withdrawing more than they currently hold.
-    if current_user_shares < amount_to_withdraw as f64 {
+    // Check if user has enough to withdraw
+    if current_deposited_value < amount_to_withdraw as f64 {
         return Err(ErrorCode::InsufficientFunds.into());
     }
 
@@ -148,18 +148,33 @@ pub fn process_withdraw(ctx: Context<Withdraw>, amount_to_withdraw: u64) -> Resu
     // User
     let user_account = &mut ctx.accounts.user_account;
 
+    // First update the user's deposited amount to reflect accrued interest
+    let user_shares: f64;
+    if user_account.usdc_address == ctx.accounts.mint.to_account_info().key() {
+        user_shares = user_account.deposited_usdc_shares as f64;
+        // Update deposited amount with interest
+        user_account.deposited_usdc = ((user_account.deposited_usdc as f64) * E.powf(time_diff as f64 * bank_account.interest_rate as f64)) as u64;
+    } else {
+        user_shares = user_account.deposited_sol_shares as f64;
+        // Update deposited amount with interest
+        user_account.deposited_sol = ((user_account.deposited_sol as f64) * E.powf(time_diff as f64 * bank_account.interest_rate as f64)) as u64;
+    }
+
+    // Ensure we don't withdraw more shares than the user has
+    let actual_shares_to_withdraw = shares_to_withdraw.min(user_shares);
+
     // Match the asset type and update the state of the user account
     if user_account.usdc_address == ctx.accounts.mint.to_account_info().key() {
         user_account.deposited_usdc -= amount_to_withdraw;
-        user_account.deposited_usdc_shares -= shares_to_withdraw as u64;
+        user_account.deposited_usdc_shares -= actual_shares_to_withdraw as u64;
     } else {
         user_account.deposited_sol -= amount_to_withdraw;
-        user_account.deposited_sol_shares -= shares_to_withdraw as u64;
+        user_account.deposited_sol_shares -= actual_shares_to_withdraw as u64;
     }
 
     // Finally update the state of the bank account
     bank_account.total_deposits -= amount_to_withdraw;
-    bank_account.total_deposits_shares -= shares_to_withdraw as u64;
+    bank_account.total_deposits_shares -= actual_shares_to_withdraw as u64;
 
     Ok(())
 }

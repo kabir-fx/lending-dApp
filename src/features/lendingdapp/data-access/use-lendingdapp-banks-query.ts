@@ -1,31 +1,41 @@
 import { useSolana } from '@/components/solana/use-solana'
 import { useQuery } from '@tanstack/react-query'
-import { address, createSolanaClient } from 'gill'
+import { address, getProgramDerivedAddress, getAddressEncoder } from 'gill'
 import { fetchBank } from '@project/anchor'
-import { NATIVE_MINT } from '@solana/spl-token'
+import { LENDING_PROTOCOL_PROGRAM_ADDRESS } from '@project/anchor'
 import { useEffect, useState } from 'react'
 
 // Load config from the setup script
 function useBanksConfig() {
   const [config, setConfig] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/anchor/banks-config.json')
-      .then(res => res.json())
-      .then(setConfig)
-      .catch(() => {
-        // Config doesn't exist yet
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+        }
+        return res.json()
+      })
+      .then(data => {
+        setConfig(data)
+        setError(null)
+      })
+      .catch(err => {
+        console.error('Failed to load banks config:', err)
+        setError(err.message)
         setConfig(null)
       })
   }, [])
 
-  return config
+  return { config, error }
 }
 
 export function useLendingdappBanksQuery() {
-  const { cluster } = useSolana()
-  const { rpc } = createSolanaClient({ urlOrMoniker: cluster as any })
-  const banksConfig = useBanksConfig()
+  const { cluster, client } = useSolana()
+  const { rpc } = client
+  const { config: banksConfig, error: configError } = useBanksConfig()
 
   return useQuery({
     queryKey: ['lendingdapp', 'banks', { cluster }],
@@ -35,7 +45,11 @@ export function useLendingdappBanksQuery() {
       // SOL Bank (using custom SOL token from config)
       if (banksConfig?.SOL_MINT) {
         try {
-          const solBankAddress = address(banksConfig.SOL_MINT)
+          const solMintAddress = address(banksConfig.SOL_MINT)
+          const [solBankAddress] = await getProgramDerivedAddress({
+            programAddress: LENDING_PROTOCOL_PROGRAM_ADDRESS,
+            seeds: [getAddressEncoder().encode(solMintAddress)],
+          })
           const solBank = await fetchBank(rpc, solBankAddress)
           banks.push({
             mint: banksConfig.SOL_MINT,
@@ -43,14 +57,18 @@ export function useLendingdappBanksQuery() {
             type: 'SOL'
           })
         } catch (e) {
-          console.warn('SOL Bank not found:', e)
+          console.error('SOL Bank fetch error:', e)
         }
       }
 
       // USDC Bank
       if (banksConfig?.USDC_MINT) {
         try {
-          const usdcBankAddress = address(banksConfig.USDC_MINT)
+          const usdcMintAddress = address(banksConfig.USDC_MINT)
+          const [usdcBankAddress] = await getProgramDerivedAddress({
+            programAddress: LENDING_PROTOCOL_PROGRAM_ADDRESS,
+            seeds: [getAddressEncoder().encode(usdcMintAddress)],
+          })
           const usdcBank = await fetchBank(rpc, usdcBankAddress)
           banks.push({
             mint: banksConfig.USDC_MINT,
@@ -58,7 +76,7 @@ export function useLendingdappBanksQuery() {
             type: 'USDC'
           })
         } catch (e) {
-          console.warn('USDC Bank not found:', e)
+          console.error('USDC Bank fetch error:', e)
         }
       }
 

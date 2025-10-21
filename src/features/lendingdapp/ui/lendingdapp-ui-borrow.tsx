@@ -7,31 +7,36 @@ import { useLendingdappBorrowMutation } from '../data-access/use-lendingdapp-bor
 
 export function LendingdappUiBorrow({ account }: { account: UiWalletAccount }) {
   const [amount, setAmount] = useState('')
-  const [priceUpdate, setPriceUpdate] = useState('')
   const mutation = useLendingdappBorrowMutation({ account })
 
+  // For now, use a placeholder price update account
+  // In a real implementation, this would come from a Pyth oracle
+  const priceUpdateAccount = '11111111111111111111111111111112' // Placeholder
+
   return (
-    <div className="space-y-2">
-      <Label htmlFor="borrow-amount">Borrow SOL</Label>
-      <div className="flex gap-2">
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="borrow-amount" className="text-sm font-medium">Amount</Label>
         <Input
           id="borrow-amount"
           type="number"
-          placeholder="Amount in SOL"
+          placeholder="Enter SOL amount to borrow"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
+          className="w-full"
+          min="0"
+          step="0.01"
         />
-        <Input
-          id="price-update"
-          type="text"
-          placeholder="PriceUpdate account (Pyth Receiver)"
-          value={priceUpdate}
-          onChange={(e) => setPriceUpdate(e.target.value)}
-        />
-        <Button onClick={() => mutation.mutateAsync({ amount: parseFloat(amount), priceUpdate })} disabled={mutation.isPending || !amount || !priceUpdate}>
-          Borrow {mutation.isPending && '...'}
-        </Button>
+        <p className="text-xs text-gray-500">Requires sufficient collateral</p>
       </div>
+
+      <Button
+        onClick={() => mutation.mutateAsync({ amount: parseFloat(amount), priceUpdate: priceUpdateAccount })}
+        disabled={mutation.isPending || !amount || parseFloat(amount) <= 0}
+        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+      >
+        {mutation.isPending ? 'Borrowing...' : 'Borrow SOL'}
+      </Button>
     </div>
   )
 }
