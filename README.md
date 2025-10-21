@@ -70,6 +70,30 @@ npm run anchor-test
 npm run anchor deploy --provider.cluster devnet
 ```
 
+#### Setup Lending Banks (Localnet)
+
+The lending protocol requires pre-initialized banks with liquidity. For localnet testing:
+
+```shell
+# Reset localnet and start fresh
+npm run reset-localnet
+npm run anchor-localnet &  # Start in background
+
+# Deploy program and setup banks
+sleep 3 && npm run anchor deploy --provider.cluster localnet
+npm run setup-banks
+
+# Or use the combined script (may need manual timing)
+npm run localnet-with-banks
+```
+
+This creates:
+- Custom SOL Token Bank with 10 SOL-equivalent liquidity
+- USDC Bank with 10 USDC liquidity
+- Both banks are pre-funded and ready for lending/borrowing
+
+**Note:** Uses custom tokens for localnet testing to avoid PDA conflicts with native SOL.
+
 ### web
 
 This is a React app that uses the Anchor generated client to interact with the Solana program.
