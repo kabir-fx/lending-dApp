@@ -1,5 +1,5 @@
 #!/usr/bin/env tsx
-import { Connection, Keypair, PublicKey, LAMPORTS_PER_SOL, Transaction } from '@solana/web3.js'
+import { Connection, Keypair, PublicKey, LAMPORTS_PER_SOL, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
 import {
   createMint,
   getOrCreateAssociatedTokenAccount,
@@ -29,8 +29,12 @@ async function main() {
 
   // Airdrop SOL to deployer for SOL transfers
   console.log('💰 Requesting SOL airdrop for deployer...')
+
   const airdropSig = await connection.requestAirdrop(deployer.publicKey, 100 * LAMPORTS_PER_SOL)
-  await connection.confirmTransaction(airdropSig)
+  await connection.confirmTransaction({
+    signature: airdropSig,
+    ...(await connection.getLatestBlockhash())
+  })
   console.log('✅ Airdropped 100 SOL to deployer')
 
   // Define token mints
@@ -243,8 +247,7 @@ async function initializeAndFundBank(
   bankTx.feePayer = deployer.publicKey
   bankTx.sign(deployer)
 
-  const bankSig = await connection.sendRawTransaction(bankTx.serialize())
-  await connection.confirmTransaction(bankSig)
+  const bankSig = await sendAndConfirmTransaction(connection, bankTx, [deployer])
 
   // Extract bank address from instruction (should be accounts[2]) for logging
   const bankAddress = bankIx.accounts[2]?.address
@@ -301,8 +304,7 @@ async function initializeAndFundBank(
     userAccountTx.feePayer = deployer.publicKey
     userAccountTx.sign(deployer)
 
-    const userAccountSig = await connection.sendRawTransaction(userAccountTx.serialize())
-    await connection.confirmTransaction(userAccountSig)
+    const userAccountSig = await sendAndConfirmTransaction(connection, userAccountTx, [deployer])
     console.log(`✅ Deployer user account initialized: ${userAccountSig}`)
   } catch (e) {
     console.log(`ℹ️  Deployer user account may already exist, continuing...`)
@@ -315,17 +317,17 @@ async function initializeAndFundBank(
   const PROGRAM_ID = "9CoY42r3y5WFDJjQX97e9m9THcVGpvuVSKjBjGkiksMR"
 
   // Derive the required PDA addresses
-  const [derivedBankAddress] = await PublicKey.findProgramAddress(
+  const [derivedBankAddress] = await PublicKey.findProgramAddressSync(
     [mint.toBuffer()],
     new PublicKey(PROGRAM_ID)
   )
 
-  const [derivedBankTokenAccountAddress] = await PublicKey.findProgramAddress(
+  const [derivedBankTokenAccountAddress] = await PublicKey.findProgramAddressSync(
     [Buffer.from("Treasury"), mint.toBuffer()],
     new PublicKey(PROGRAM_ID)
   )
 
-  const [derivedUserAccountAddress] = await PublicKey.findProgramAddress(
+  const [derivedUserAccountAddress] = await PublicKey.findProgramAddressSync(
     [deployer.publicKey.toBuffer()],
     new PublicKey(PROGRAM_ID)
   )
@@ -380,8 +382,7 @@ async function initializeAndFundBank(
   depositTx.feePayer = deployer.publicKey
   depositTx.sign(deployer)
 
-  const depositSig = await connection.sendRawTransaction(depositTx.serialize())
-  await connection.confirmTransaction(depositSig)
+  const depositSig = await sendAndConfirmTransaction(connection, depositTx, [deployer])
   console.log(`✅ ${tokenName} deposited into bank: ${depositSig}`)
 }
 
