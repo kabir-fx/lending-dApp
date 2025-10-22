@@ -102,8 +102,13 @@ async function main() {
 
   // Create public directory and copy config for Next.js
   fs.mkdirSync('../public/anchor', { recursive: true })
-  fs.writeFileSync('../public/anchor/banks-config.json', JSON.stringify(config, null, 2))
-  console.log('✅ Banks setup complete! Config saved to ../public/anchor/banks-config.json')
+  fs.writeFile('../public/anchor/banks-config.json', JSON.stringify(config, null, 2), (error) => {
+    if (error) {
+      console.error('Error writing config file:', error)
+    } else {
+      console.log('✅ Banks setup complete! Config saved to ../public/anchor/banks-config.json')
+    }
+  })
 
   // Check for user address argument for faucet
   const userAddress = process.argv[2]
@@ -141,9 +146,9 @@ async function mintTokensToUser(
     solMint,
     solTokenAccount.address,
     deployer.publicKey,
-    5 * LAMPORTS_PER_SOL
+    50 * LAMPORTS_PER_SOL
   )
-  console.log('✅ Minted 5 SOL to user')
+  console.log('✅ Minted 50 SOL to user')
 
   // Mint 1000 USDC to user
   const usdcTokenAccount = await getOrCreateAssociatedTokenAccount(
@@ -171,7 +176,7 @@ async function initializeAndFundBank(
   amount: number,
   tokenName: string
 ) {
-  // 1. Initialize the bank
+  // 1. Initialize the bank. This creates a new bank account for the token (Gill instruction from Codama)
   const bankIx = await getInitializeBankInstructionAsync({
     signer: deployerSigner,
     mint: address(mint.toString()),
@@ -179,14 +184,52 @@ async function initializeAndFundBank(
     maxLtv: 70, // 70%
   })
 
-  // Convert to web3 instruction with correct account permissions
-  // InitializeBank accounts: [signer, mint, bank, bank_token_account, token_program, system_program]
-  // Writable: signer(0), bank(2), bank_token_account(3)
-  // Signer: signer(0)
+  /*
+    Convert the Gill instruction to a web3 instruction for solana
+
+    Current gill instruction structure:
+      bankIx = {
+        accounts: [
+          { address: "signer_wallet", role: "signer" },
+          { address: "mint_address", role: "readonly" }, 
+          { address: "bank_pda", role: "writable" },
+          { address: "bank_token_account_pda", role: "writable" },
+          { address: "token_program", role: "readonly" },
+          { address: "system_program", role: "readonly" }
+        ],
+        programAddress: "lending_program_id",
+        data: Uint8Array([...])  // Serialized instruction data
+      }
+
+    Required web3 instruction structure:
+      web3BankIx = {
+        keys: [  // AccountMeta array for web3.js
+          {
+            pubkey: new PublicKey("signer_wallet"),
+            isSigner: true,    // signer(0) = deployer wallet
+            isWritable: true   // signer account gets modified (pays rent)
+          },
+          {
+            pubkey: new PublicKey("mint_address"), 
+            isSigner: false,   // mint doesn't sign
+            isWritable: false  // mint account doesn't change
+          },
+          {
+            pubkey: new PublicKey("bank_pda"),
+            isSigner: false,   // PDA doesn't sign
+            isWritable: true   // bank account gets created/modified
+          },
+          // ... more accounts
+        ],
+        programId: new PublicKey("lending_program_id"),
+        data: Buffer.from(instruction_data)  // Raw bytes for program
+      }    
+  */
+
   const web3BankIx = {
     keys: bankIx.accounts.map((acc: any, index: number) => ({
       pubkey: new PublicKey(acc.address),
-      isSigner: index === 0, // Only signer is a signer
+      isSigner: index === 0,
       isWritable: index === 0 || index === 2 || index === 3 // signer, bank, bank_token_account are writable
     })),
     programId: new PublicKey(bankIx.programAddress),
@@ -203,12 +246,12 @@ async function initializeAndFundBank(
   const bankSig = await connection.sendRawTransaction(bankTx.serialize())
   await connection.confirmTransaction(bankSig)
 
-  // Extract bank address from instruction (should be accounts[2])
+  // Extract bank address from instruction (should be accounts[2]) for logging
   const bankAddress = bankIx.accounts[2]?.address
   console.log(`✅ ${tokenName} Bank initialized: ${bankSig}`)
   console.log(`📍 ${tokenName} Bank address: ${bankAddress}`)
 
-  // 2. Create deployer's token account and fund it
+  // 2. Create deployer's token account to fund it since we are providing initial liquidity to the bank.
   const deployerTokenAccount = await getOrCreateAssociatedTokenAccount(
     connection,
     deployer,
@@ -216,7 +259,7 @@ async function initializeAndFundBank(
     deployer.publicKey
   )
 
-  // Mint tokens to deployer (both SOL and USDC are now custom tokens)
+  // Mint tokens to deployer
   await mintTo(
     connection,
     deployer,
@@ -228,14 +271,14 @@ async function initializeAndFundBank(
   const displayAmount = tokenName === 'SOL' ? amount / LAMPORTS_PER_SOL : amount / 1_000_000
   console.log(`✅ Minted ${displayAmount} ${tokenName} to deployer`)
 
-  // 3. Initialize deployer user account (if not exists)
+  // 3. Initialize deployer user account (if not exists) - since a user account is required (in the lending protocol) to deposit the tokens into the bank.
   try {
     // Try to initialize user account - this might fail if it already exists
-    // Use USDC mint for user account initialization (doesn't matter which one, just needs an address)
-    const usdcMint = tokenName === 'SOL' ? '9HxcjJsPhwf6C68AYm96q7oP8nTdHLVfuiLn5dfgKZX5' : mint.toString()
+    // Use the current mint for user account initialization (doesn't matter which one we use)
+    const mintAdress = mint.toString()
     const userAccountIx = await getInitializeAccountInstructionAsync({
       signer: deployerSigner,
-      usdcAddress: address(usdcMint)
+      usdcAddress: address(mintAdress)
     })
 
     // Convert Gill instruction to web3 with correct account permissions
@@ -268,20 +311,23 @@ async function initializeAndFundBank(
   // 4. Deposit tokens into the bank using the lending protocol deposit instruction
   console.log(`💰 Depositing ${amount / (tokenName === 'SOL' ? LAMPORTS_PER_SOL : 1_000_000)} ${tokenName} into bank...`)
 
+  // PROGRAM that owns/controls all PDAs
+  const PROGRAM_ID = "9CoY42r3y5WFDJjQX97e9m9THcVGpvuVSKjBjGkiksMR"
+
   // Derive the required PDA addresses
   const [derivedBankAddress] = await PublicKey.findProgramAddress(
     [mint.toBuffer()],
-    new PublicKey("9CoY42r3y5WFDJjQX97e9m9THcVGpvuVSKjBjGkiksMR")
+    new PublicKey(PROGRAM_ID)
   )
 
   const [derivedBankTokenAccountAddress] = await PublicKey.findProgramAddress(
     [Buffer.from("Treasury"), mint.toBuffer()],
-    new PublicKey("9CoY42r3y5WFDJjQX97e9m9THcVGpvuVSKjBjGkiksMR")
+    new PublicKey(PROGRAM_ID)
   )
 
   const [derivedUserAccountAddress] = await PublicKey.findProgramAddress(
     [deployer.publicKey.toBuffer()],
-    new PublicKey("9CoY42r3y5WFDJjQX97e9m9THcVGpvuVSKjBjGkiksMR")
+    new PublicKey(PROGRAM_ID)
   )
 
   const derivedUserTokenAccount = await getAssociatedTokenAddress(mint, deployer.publicKey)
@@ -298,7 +344,7 @@ async function initializeAndFundBank(
   console.log('Addresses match:', derivedBankAddress.toString() === bankAddress)
 
   // Create deposit instruction with explicit PDA addresses
-  const depositIx = await getDepositInstruction({
+  const depositIx = getDepositInstruction({
     signer: deployerSigner,
     mint: address(mint.toString()),
     bank: address(derivedBankAddress.toString()),
