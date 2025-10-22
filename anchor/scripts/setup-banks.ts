@@ -317,17 +317,17 @@ async function initializeAndFundBank(
   const PROGRAM_ID = "9CoY42r3y5WFDJjQX97e9m9THcVGpvuVSKjBjGkiksMR"
 
   // Derive the required PDA addresses
-  const [derivedBankAddress] = await PublicKey.findProgramAddressSync(
+  const [derivedBankAddress] = PublicKey.findProgramAddressSync(
     [mint.toBuffer()],
     new PublicKey(PROGRAM_ID)
   )
 
-  const [derivedBankTokenAccountAddress] = await PublicKey.findProgramAddressSync(
+  const [derivedBankTokenAccountAddress] = PublicKey.findProgramAddressSync(
     [Buffer.from("Treasury"), mint.toBuffer()],
     new PublicKey(PROGRAM_ID)
   )
 
-  const [derivedUserAccountAddress] = await PublicKey.findProgramAddressSync(
+  const [derivedUserAccountAddress] = PublicKey.findProgramAddressSync(
     [deployer.publicKey.toBuffer()],
     new PublicKey(PROGRAM_ID)
   )
