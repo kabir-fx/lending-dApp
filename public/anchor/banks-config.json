@@ -1,6 +1,6 @@
 {
-  "SOL_MINT": "3NoMuiXs8g3VhpracmC2VP8MjAe9vHkEHFLgksLdHZAt",
-  "USDC_MINT": "6dtBJagnRDNG3w8GtZ4brKzPxr8WFgsamshWWcV527xn",
+  "SOL_MINT": "BcgjEPFP6hQ71rjw1G3QKpFU5DYerRBeRPhiEX6Q1gaB",
+  "USDC_MINT": "shgrhBRHjygECJXj17fGSm6nEejVpHsufm3ifMQpfhy",
   "SOL_MINT_AUTHORITY": "Bm3PBYtPwN17nkSvsogNgk1ycLBgf3BTNpwnrNzZnMRp",
   "USDC_MINT_AUTHORITY": "Bm3PBYtPwN17nkSvsogNgk1ycLBgf3BTNpwnrNzZnMRp",
   "banks_initialized": true

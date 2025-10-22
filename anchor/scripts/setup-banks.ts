@@ -1,26 +1,23 @@
 #!/usr/bin/env tsx
-import { Connection, Keypair, PublicKey, LAMPORTS_PER_SOL, Transaction, SystemProgram } from '@solana/web3.js'
+import { Connection, Keypair, PublicKey, LAMPORTS_PER_SOL, Transaction } from '@solana/web3.js'
 import {
   createMint,
-  createTransferCheckedInstruction,
   getOrCreateAssociatedTokenAccount,
   getAssociatedTokenAddress,
   mintTo,
-  NATIVE_MINT
 } from '@solana/spl-token'
 import {
   getInitializeBankInstructionAsync,
   getInitializeAccountInstructionAsync,
   getDepositInstruction
 } from '../src/client/js/generated/instructions'
-import { fetchBank } from '../src/client/js/generated/accounts'
 import { address } from 'gill'
 import { createKeyPairSignerFromBytes, KeyPairSigner } from '@solana/signers'
 import fs from 'fs'
 
 async function main() {
   const connection = new Connection('http://127.0.0.1:8899', 'confirmed')
-  
+
   // Load deployer keypair
   const keypairPath = `${process.env.HOME}/.config/solana/id.json`
   const keypairData = JSON.parse(fs.readFileSync(keypairPath, 'utf-8'))
@@ -35,12 +32,12 @@ async function main() {
   const airdropSig = await connection.requestAirdrop(deployer.publicKey, 100 * LAMPORTS_PER_SOL)
   await connection.confirmTransaction(airdropSig)
   console.log('✅ Airdropped 100 SOL to deployer')
-  
+
   // Define token mints
   let SOL_MINT: PublicKey
   let USDC_MINT: PublicKey
 
-  // Create SOL-like mint for localnet (avoiding NATIVE_MINT PDA conflicts)
+  // Create SOL-like mint for localnet
   try {
     SOL_MINT = new PublicKey(process.env.SOL_MINT!)
     console.log('✅ Using existing SOL mint:', SOL_MINT.toBase58())
@@ -93,7 +90,7 @@ async function main() {
     10 * 1_000_000, // 10 USDC (6 decimals)
     'USDC'
   )
-  
+
   // Save configuration
   const config = {
     SOL_MINT: SOL_MINT.toBase58(),
@@ -102,7 +99,7 @@ async function main() {
     USDC_MINT_AUTHORITY: deployer.publicKey.toBase58(), // Mint authority is the deployer
     banks_initialized: true
   }
-  
+
   // Create public directory and copy config for Next.js
   fs.mkdirSync('../public/anchor', { recursive: true })
   fs.writeFileSync('../public/anchor/banks-config.json', JSON.stringify(config, null, 2))
@@ -112,7 +109,13 @@ async function main() {
   const userAddress = process.argv[2]
   if (userAddress) {
     console.log(`🚰 Minting test tokens to user: ${userAddress}`)
-    await mintTokensToUser(connection, deployer, SOL_MINT, USDC_MINT, userAddress)
+    await mintTokensToUser(
+      connection,
+      deployer,
+      SOL_MINT,
+      USDC_MINT,
+      userAddress
+    )
   }
 }
 
@@ -160,19 +163,6 @@ async function mintTokensToUser(
   console.log('✅ Minted 1000 USDC to user')
 }
 
-async function initializeAndFundBankIfNeeded(
-  connection: Connection,
-  deployer: Keypair,
-  deployerSigner: KeyPairSigner,
-  mint: PublicKey,
-  amount: number,
-  tokenName: string
-) {
-  // Always initialize bank (simplified for faucet functionality)
-  console.log(`📝 Initializing ${tokenName} Bank...`)
-  await initializeAndFundBank(connection, deployer, deployerSigner, mint, amount, tokenName)
-}
-
 async function initializeAndFundBank(
   connection: Connection,
   deployer: Keypair,
@@ -188,7 +178,7 @@ async function initializeAndFundBank(
     liquidationThreshold: 80, // 80%
     maxLtv: 70, // 70%
   })
-  
+
   // Convert to web3 instruction with correct account permissions
   // InitializeBank accounts: [signer, mint, bank, bank_token_account, token_program, system_program]
   // Writable: signer(0), bank(2), bank_token_account(3)
@@ -202,14 +192,14 @@ async function initializeAndFundBank(
     programId: new PublicKey(bankIx.programAddress),
     data: Buffer.from(bankIx.data)
   }
-  
+
   // Send bank initialization
   const bankTx = new Transaction().add(web3BankIx)
   const { blockhash } = await connection.getLatestBlockhash()
   bankTx.recentBlockhash = blockhash
   bankTx.feePayer = deployer.publicKey
   bankTx.sign(deployer)
-  
+
   const bankSig = await connection.sendRawTransaction(bankTx.serialize())
   await connection.confirmTransaction(bankSig)
 
@@ -217,7 +207,7 @@ async function initializeAndFundBank(
   const bankAddress = bankIx.accounts[2]?.address
   console.log(`✅ ${tokenName} Bank initialized: ${bankSig}`)
   console.log(`📍 ${tokenName} Bank address: ${bankAddress}`)
-  
+
   // 2. Create deployer's token account and fund it
   const deployerTokenAccount = await getOrCreateAssociatedTokenAccount(
     connection,
