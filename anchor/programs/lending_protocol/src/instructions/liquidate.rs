@@ -11,7 +11,7 @@ use pyth_solana_receiver_sdk::price_update::{get_feed_id_from_hex, PriceUpdateV2
 use crate::{
     constants::{MAX_AGE, SOL_USD_FEED_ID, USDC_USD_FEED_ID},
     errors::ErrorCode,
-    state::{Bank, User, TokenType},
+    state::{Bank, TokenType, User},
 };
 
 #[derive(Accounts)]
@@ -132,7 +132,7 @@ pub fn process_liquidate(ctx: Context<Liquidate>, token_type: TokenType) -> Resu
             )?;
 
             total_borrowed_value = new_sol_price * sol_price.price as u64;
-        },
+        }
         TokenType::SOL => {
             let new_sol_price = calculate_accrued_interest(
                 liquidator_user_account.deposited_sol,
@@ -149,7 +149,7 @@ pub fn process_liquidate(ctx: Context<Liquidate>, token_type: TokenType) -> Resu
             )?;
 
             total_borrowed_value = new_usdc_price * usdc_price.price as u64;
-        },
+        }
     }
 
     // Cal. the health factor to ensure that the account is healthy. Is the HF < 1, then the account is unhealthy.

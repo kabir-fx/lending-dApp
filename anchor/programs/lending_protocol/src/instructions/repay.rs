@@ -8,8 +8,8 @@ use anchor_spl::{
     token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 
-use crate::{errors::ErrorCode, state::TokenType};
 use crate::state::{Bank, User};
+use crate::{errors::ErrorCode, state::TokenType};
 
 #[derive(Accounts)]
 pub struct Repay<'info> {
@@ -69,7 +69,11 @@ pub struct Repay<'info> {
 /// Esentially we are making a CPI transfer from the user token account to the bank token account to repay the borrowed asset.
 ///
 /// We will also have to perfrom a basic check to ensure that the user doesn't repay more than they borrowed.
-pub fn process_repay(ctx: Context<Repay>, amount_to_repay: u64, token_type: TokenType) -> Result<()> {
+pub fn process_repay(
+    ctx: Context<Repay>,
+    amount_to_repay: u64,
+    token_type: TokenType,
+) -> Result<()> {
     let bank_account = &mut ctx.accounts.bank;
     let user_account = &mut ctx.accounts.user_account;
 

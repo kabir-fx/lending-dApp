@@ -30,15 +30,27 @@ pub mod lending_protocol {
         process_initialize_account(ctx)
     }
 
-    pub fn deposit(ctx: Context<Deposit>, amount_to_deposit: u64, token_type: TokenType) -> Result<()> {
+    pub fn deposit(
+        ctx: Context<Deposit>,
+        amount_to_deposit: u64,
+        token_type: TokenType,
+    ) -> Result<()> {
         process_deposit(ctx, amount_to_deposit, token_type)
     }
 
-    pub fn withdraw(ctx: Context<Withdraw>, amount_to_withdraw: u64, token_type: TokenType) -> Result<()> {
+    pub fn withdraw(
+        ctx: Context<Withdraw>,
+        amount_to_withdraw: u64,
+        token_type: TokenType,
+    ) -> Result<()> {
         process_withdraw(ctx, amount_to_withdraw, token_type)
     }
 
-    pub fn borrow(ctx: Context<Borrow>, amount_to_borrow: u64, token_type: TokenType) -> Result<()> {
+    pub fn borrow(
+        ctx: Context<Borrow>,
+        amount_to_borrow: u64,
+        token_type: TokenType,
+    ) -> Result<()> {
         process_borrow(ctx, amount_to_borrow, token_type)
     }
 

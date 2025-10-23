@@ -12,7 +12,7 @@ use pyth_solana_receiver_sdk::price_update::{get_feed_id_from_hex, PriceUpdateV2
 use crate::{
     constants::{MAX_AGE, SOL_USD_FEED_ID, USDC_USD_FEED_ID},
     errors::ErrorCode,
-    state::{Bank, User, TokenType},
+    state::{Bank, TokenType, User},
 };
 
 /// Define the struct needed for our context to create the instruction for borrowing assets
@@ -77,15 +77,18 @@ pub struct Borrow<'info> {
 /// Instruction to process the borrow.
 ///
 /// Before processing the borrow, we need to check if the user has deposited enough collateral to be able to borrow the desired amount.
-pub fn process_borrow(ctx: Context<Borrow>, amount_to_borrow: u64, token_type: TokenType) -> Result<()> {
+pub fn process_borrow(
+    ctx: Context<Borrow>,
+    amount_to_borrow: u64,
+    token_type: TokenType,
+) -> Result<()> {
     let bank_account = &mut ctx.accounts.bank;
     let user_account = &mut ctx.accounts.user_account;
 
     let price_update = &mut ctx.accounts.price_update;
 
     // Cal. the total collateral a user holds
-    let total_collateral: u64 =
-    match token_type {
+    let total_collateral: u64 = match token_type {
         TokenType::USDC => {
             // If the user is passing USDC as key, means that they have their collateral in SOL
             let sol_feed_id = get_feed_id_from_hex(SOL_USD_FEED_ID)?;

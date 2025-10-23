@@ -69,7 +69,11 @@ pub struct Deposit<'info> {
 /// 2. Calculate the new shared added to the bank and to the user
 /// 3. Update the user's deposited amount and total collateral value
 /// 4. Update the bank's total deposits and total deposits shares
-pub fn process_deposit(ctx: Context<Deposit>, amount_to_deposit: u64, token_type: TokenType) -> Result<()> {
+pub fn process_deposit(
+    ctx: Context<Deposit>,
+    amount_to_deposit: u64,
+    token_type: TokenType,
+) -> Result<()> {
     // CPI Transfer
     let transfer_cpi_accounts = TransferChecked {
         // From user's token account

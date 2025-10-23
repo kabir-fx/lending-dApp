@@ -100,9 +100,7 @@ pub fn process_initialize_bank(
 /// Instruction to initialize the user account
 ///
 /// Initialization happened in the stuct so here is - saving the infromation we need to the account state of the user.
-pub fn process_initialize_account(
-    ctx: Context<InitializeAccount>
-) -> Result<()> {
+pub fn process_initialize_account(ctx: Context<InitializeAccount>) -> Result<()> {
     let user = &mut ctx.accounts.user_account;
 
     user.owner = ctx.accounts.signer.key();

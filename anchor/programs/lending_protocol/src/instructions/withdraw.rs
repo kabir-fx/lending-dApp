@@ -72,7 +72,11 @@ pub struct Withdraw<'info> {
 /// Instruction to process the withdrawal.
 ///
 /// Before processing the withdrawal, we need to check if the user has depossited enough tokens to be able to withdraw. User cannot withdraw tokens that they already deposited.
-pub fn process_withdraw(ctx: Context<Withdraw>, amount_to_withdraw: u64, token_type: TokenType) -> Result<()> {
+pub fn process_withdraw(
+    ctx: Context<Withdraw>,
+    amount_to_withdraw: u64,
+    token_type: TokenType,
+) -> Result<()> {
     let bank_account = &mut ctx.accounts.bank;
     let user_account = &mut ctx.accounts.user_account;
 
@@ -98,7 +102,8 @@ pub fn process_withdraw(ctx: Context<Withdraw>, amount_to_withdraw: u64, token_t
         bank_account.total_deposits as f64 / bank_account.total_deposits_shares as f64;
 
     // Calculate the current value of user's deposited tokens after interest
-    let current_deposited_value = deposited_tokens as f64 * E.powf(time_diff as f64 * bank_account.interest_rate as f64);
+    let current_deposited_value =
+        deposited_tokens as f64 * E.powf(time_diff as f64 * bank_account.interest_rate as f64);
 
     // Check if user has enough to withdraw
     if current_deposited_value < amount_to_withdraw as f64 {
@@ -153,13 +158,17 @@ pub fn process_withdraw(ctx: Context<Withdraw>, amount_to_withdraw: u64, token_t
         TokenType::USDC => {
             user_shares = user_account.deposited_usdc_shares as f64;
             // Update deposited amount with interest
-            user_account.deposited_usdc = ((user_account.deposited_usdc as f64) * E.powf(time_diff as f64 * bank_account.interest_rate as f64)) as u64;
-        },
+            user_account.deposited_usdc = ((user_account.deposited_usdc as f64)
+                * E.powf(time_diff as f64 * bank_account.interest_rate as f64))
+                as u64;
+        }
         TokenType::SOL => {
             user_shares = user_account.deposited_sol_shares as f64;
             // Update deposited amount with interest
-            user_account.deposited_sol = ((user_account.deposited_sol as f64) * E.powf(time_diff as f64 * bank_account.interest_rate as f64)) as u64;
-        },
+            user_account.deposited_sol = ((user_account.deposited_sol as f64)
+                * E.powf(time_diff as f64 * bank_account.interest_rate as f64))
+                as u64;
+        }
     }
 
     // Ensure we don't withdraw more shares than the user has
@@ -170,11 +179,11 @@ pub fn process_withdraw(ctx: Context<Withdraw>, amount_to_withdraw: u64, token_t
         TokenType::USDC => {
             user_account.deposited_usdc -= amount_to_withdraw;
             user_account.deposited_usdc_shares -= actual_shares_to_withdraw as u64;
-        },
+        }
         TokenType::SOL => {
             user_account.deposited_sol -= amount_to_withdraw;
             user_account.deposited_sol_shares -= actual_shares_to_withdraw as u64;
-        },
+        }
     }
 
     // Finally update the state of the bank account
