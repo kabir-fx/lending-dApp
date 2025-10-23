@@ -1,119 +1,89 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  ArrowRight,
-  BookOpen,
-  CookingPot,
-  Droplets,
-  LucideAnchor,
-  LucideCode,
-  LucideWallet,
-  MessageCircleQuestion,
-} from 'lucide-react'
+'use client'
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import React from 'react'
-import { AppHero } from '@/components/app-hero'
+import { useLendingdappBanksQuery } from '@/features/lendingdapp/data-access/use-lendingdapp-banks-query'
+import { UserAccount } from '../lendingdapp/ui/lendingdapp-ui-dashboard'
 
-const primary: {
-  label: string
-  href: string
-  description: string
-  icon: React.ReactNode
-}[] = [
-  {
-    label: 'Solana Docs',
-    href: 'https://solana.com/docs',
-    description: 'The official documentation. Your first stop for understanding the Solana ecosystem.',
-    icon: <BookOpen className="w-8 h-8 text-purple-400" />,
-  },
-  {
-    label: 'Solana Cookbook',
-    href: 'https://solana.com/developers/cookbook/',
-    description: 'Practical examples and code snippets for common tasks when building on Solana.',
-    icon: <CookingPot className="w-8 h-8 text-green-400" />,
-  },
-]
+export default function DashboardFeature({ userAccount }: { userAccount: UserAccount }) {
+  const { data: banks } = useLendingdappBanksQuery()
 
-const secondary: {
-  label: string
-  href: string
-  icon: React.ReactNode
-}[] = [
-  {
-    label: 'Solana Faucet',
-    href: 'https://faucet.solana.com/',
-    icon: <Droplets className="w-5 h-5 text-green-400" />,
-  },
-  {
-    label: 'Solana Stack Overflow',
-    href: 'https://solana.stackexchange.com/',
-    icon: <MessageCircleQuestion className="w-5 h-5 text-orange-400" />,
-  },
-  {
-    label: 'Wallet UI Docs',
-    href: 'https://wallet-ui.dev',
-    icon: <LucideWallet className="w-5 h-5 text-blue-400" />,
-  },
-  {
-    label: 'Anchor Docs',
-    href: 'https://www.anchor-lang.com/docs',
-    icon: <LucideAnchor className="w-5 h-5 text-indigo-400" />,
-  },
-  {
-    label: 'Codama Repository',
-    href: 'https://github.com/codama-idl/codama',
-    icon: <LucideCode className="w-5 h-5 text-lime-400" />,
-  },
-]
-
-export default function DashboardFeature() {
   return (
     <div>
-      <AppHero title="gm" subtitle="Say hi to your new Solana app." />
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {primary.map((link) => (
-            <a key={link.label} href={link.href} target="_blank" rel="noopener noreferrer" className="block group">
-              <Card className="h-full flex flex-col transition-all duration-200 ease-in-out group-hover:border-primary group-hover:shadow-lg group-hover:-translate-y-1">
-                <CardHeader className="flex-row items-center gap-4">
-                  {link.icon}
-                  <div>
-                    <CardTitle className="group-hover:text-primary transition-colors">{link.label}</CardTitle>
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-xl">Available Liquidity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {banks?.length ? (
+            <div className="space-y-4">
+              {banks.map((bank) => (
+                <div key={bank.mint} className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="text-sm text-gray-600">{bank.type} Pool</div>
+                      <div className="text-lg text-gray-600">
+                        {Number((bank.totalDeposits - bank.totalBorrows)) / (bank.type === 'SOL' ? 1_000_000_000 : 1_000_000)} {bank.type}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Total Deposits: {Number(bank.totalDeposits) / (bank.type === 'SOL' ? 1_000_000_000 : 1_000_000)} {bank.type}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-gray-500">Available</div>
+                      <div className="text-sm font-medium text-green-600">Active</div>
+                    </div>
                   </div>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  <p className="text-muted-foreground">{link.description}</p>
-                </CardContent>
-              </Card>
-            </a>
-          ))}
-        </div>
-        <div className="mt-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>More Resources</CardTitle>
-              <CardDescription>Expand your knowledge with these community and support links.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-4">
-                {secondary.map((link) => (
-                  <li key={link.label}>
-                    <a
-                      href={link.href}
-                      className="flex items-center gap-4 group rounded-md p-2 -m-2 hover:bg-muted transition-colors"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {link.icon}
-                      <span className="flex-grow text-muted-foreground group-hover:text-foreground transition-colors">
-                        {link.label}
-                      </span>
-                      <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <div className="animate-pulse">Loading bank data...</div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <br />
+
+      <div>
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-xl">Your Position</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-6"> {/* Two columns with larger gaps */}
+              <div className="bg-blue-50 p-6 rounded-lg">
+                <div className="text-sm text-blue-600 font-medium mb-2">Deposited SOL</div>
+                <div className="text-2xl font-bold text-blue-900">
+                  {(userAccount.depositedSol / 1_000_000_000).toFixed(9)} SOL
+                </div>
+              </div>
+
+              <div className="bg-red-50 p-6 rounded-lg">
+                <div className="text-sm text-red-600 font-medium mb-2">Borrowed SOL</div>
+                <div className="text-2xl font-bold text-red-900">
+                  {(userAccount.borrowedSol / 1_000_000_000).toFixed(9)} SOL
+                </div>
+              </div>
+
+              <div className="bg-green-50 p-6 rounded-lg">
+                <div className="text-sm text-green-600 font-medium mb-2">Deposited USDC</div>
+                <div className="text-2xl font-bold text-green-900">
+                  {(userAccount.depositedUsdc / 1_000_000).toFixed(9)} USDC
+                </div>
+              </div>
+
+              <div className="bg-orange-50 p-6 rounded-lg">
+                <div className="text-sm text-orange-600 font-medium mb-2">Borrowed USDC</div>
+                <div className="text-2xl font-bold text-orange-900">
+                  {(userAccount.borrowedUsdc / 1_000_000).toFixed(9)} USDC
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
