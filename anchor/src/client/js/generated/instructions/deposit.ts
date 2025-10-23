@@ -40,6 +40,12 @@ import {
   getAccountMetaFactory,
   type ResolvedAccount,
 } from '../shared';
+import {
+  getTokenTypeDecoder,
+  getTokenTypeEncoder,
+  type TokenType,
+  type TokenTypeArgs,
+} from '../types';
 
 export const DEPOSIT_DISCRIMINATOR = new Uint8Array([
   242, 35, 198, 137, 82, 225, 242, 182,
@@ -106,15 +112,20 @@ export type DepositInstruction<
 export type DepositInstructionData = {
   discriminator: ReadonlyUint8Array;
   amountToDeposit: bigint;
+  tokenType: TokenType;
 };
 
-export type DepositInstructionDataArgs = { amountToDeposit: number | bigint };
+export type DepositInstructionDataArgs = {
+  amountToDeposit: number | bigint;
+  tokenType: TokenTypeArgs;
+};
 
 export function getDepositInstructionDataEncoder(): FixedSizeEncoder<DepositInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['amountToDeposit', getU64Encoder()],
+      ['tokenType', getTokenTypeEncoder()],
     ]),
     (value) => ({ ...value, discriminator: DEPOSIT_DISCRIMINATOR })
   );
@@ -124,6 +135,7 @@ export function getDepositInstructionDataDecoder(): FixedSizeDecoder<DepositInst
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['amountToDeposit', getU64Decoder()],
+    ['tokenType', getTokenTypeDecoder()],
   ]);
 }
 
@@ -171,6 +183,7 @@ export type DepositAsyncInput<
   /** System program to create the account */
   systemProgram?: Address<TAccountSystemProgram>;
   amountToDeposit: DepositInstructionDataArgs['amountToDeposit'];
+  tokenType: DepositInstructionDataArgs['tokenType'];
 };
 
 export async function getDepositInstructionAsync<
@@ -357,6 +370,7 @@ export type DepositInput<
   /** System program to create the account */
   systemProgram?: Address<TAccountSystemProgram>;
   amountToDeposit: DepositInstructionDataArgs['amountToDeposit'];
+  tokenType: DepositInstructionDataArgs['tokenType'];
 };
 
 export function getDepositInstruction<

@@ -10,7 +10,6 @@ import {
   combineCodec,
   fixDecoderSize,
   fixEncoderSize,
-  getAddressDecoder,
   getAddressEncoder,
   getBytesDecoder,
   getBytesEncoder,
@@ -78,17 +77,13 @@ export type InitializeAccountInstruction<
 
 export type InitializeAccountInstructionData = {
   discriminator: ReadonlyUint8Array;
-  usdcAddress: Address;
 };
 
-export type InitializeAccountInstructionDataArgs = { usdcAddress: Address };
+export type InitializeAccountInstructionDataArgs = {};
 
 export function getInitializeAccountInstructionDataEncoder(): FixedSizeEncoder<InitializeAccountInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([
-      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
-      ['usdcAddress', getAddressEncoder()],
-    ]),
+    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
     (value) => ({ ...value, discriminator: INITIALIZE_ACCOUNT_DISCRIMINATOR })
   );
 }
@@ -96,7 +91,6 @@ export function getInitializeAccountInstructionDataEncoder(): FixedSizeEncoder<I
 export function getInitializeAccountInstructionDataDecoder(): FixedSizeDecoder<InitializeAccountInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
-    ['usdcAddress', getAddressDecoder()],
   ]);
 }
 
@@ -119,7 +113,6 @@ export type InitializeAccountAsyncInput<
   /** Initialize the user account */
   userAccount?: Address<TAccountUserAccount>;
   systemProgram?: Address<TAccountSystemProgram>;
-  usdcAddress: InitializeAccountInstructionDataArgs['usdcAddress'];
 };
 
 export async function getInitializeAccountInstructionAsync<
@@ -157,9 +150,6 @@ export async function getInitializeAccountInstructionAsync<
     ResolvedAccount
   >;
 
-  // Original args.
-  const args = { ...input };
-
   // Resolve default values.
   if (!accounts.userAccount.value) {
     accounts.userAccount.value = await getProgramDerivedAddress({
@@ -179,9 +169,7 @@ export async function getInitializeAccountInstructionAsync<
       getAccountMeta(accounts.userAccount),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getInitializeAccountInstructionDataEncoder().encode(
-      args as InitializeAccountInstructionDataArgs
-    ),
+    data: getInitializeAccountInstructionDataEncoder().encode({}),
     programAddress,
   } as InitializeAccountInstruction<
     TProgramAddress,
@@ -200,7 +188,6 @@ export type InitializeAccountInput<
   /** Initialize the user account */
   userAccount: Address<TAccountUserAccount>;
   systemProgram?: Address<TAccountSystemProgram>;
-  usdcAddress: InitializeAccountInstructionDataArgs['usdcAddress'];
 };
 
 export function getInitializeAccountInstruction<
@@ -236,9 +223,6 @@ export function getInitializeAccountInstruction<
     ResolvedAccount
   >;
 
-  // Original args.
-  const args = { ...input };
-
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
@@ -252,9 +236,7 @@ export function getInitializeAccountInstruction<
       getAccountMeta(accounts.userAccount),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getInitializeAccountInstructionDataEncoder().encode(
-      args as InitializeAccountInstructionDataArgs
-    ),
+    data: getInitializeAccountInstructionDataEncoder().encode({}),
     programAddress,
   } as InitializeAccountInstruction<
     TProgramAddress,

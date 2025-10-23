@@ -9,11 +9,12 @@ import {
 import {
   getInitializeBankInstructionAsync,
   getInitializeAccountInstructionAsync,
-  getDepositInstruction
+  getDepositInstructionAsync
 } from '../src/client/js/generated/instructions'
 import { address } from 'gill'
 import { createKeyPairSignerFromBytes, KeyPairSigner } from '@solana/signers'
 import fs from 'fs'
+import { TokenType } from '@project/anchor'
 
 async function main() {
   const connection = new Connection('http://127.0.0.1:8899', 'confirmed')
@@ -57,17 +58,6 @@ async function main() {
     console.log('✅ SOL Mint created:', SOL_MINT.toBase58())
   }
 
-  // Initialize SOL Bank
-  console.log('🏦 Initializing SOL Bank...')
-  await initializeAndFundBank(
-    connection,
-    deployer,
-    deployerSigner,
-    SOL_MINT,
-    10 * LAMPORTS_PER_SOL, // 10 SOL
-    'SOL'
-  )
-
   // Create USDC mint for localnet
   try {
     USDC_MINT = new PublicKey(process.env.USDC_MINT!)
@@ -83,6 +73,18 @@ async function main() {
     )
     console.log('✅ USDC Mint created:', USDC_MINT.toBase58())
   }
+  
+  // Initialize SOL Bank
+  console.log('🏦 Initializing SOL Bank...')
+  await initializeAndFundBank(
+    connection,
+    deployer,
+    deployerSigner,
+    USDC_MINT,
+    SOL_MINT,
+    50 * LAMPORTS_PER_SOL, // 100 SOL
+    'SOL'
+  )
 
   // Initialize USDC Bank
   console.log('🏦 Initializing USDC Bank...')
@@ -91,7 +93,8 @@ async function main() {
     deployer,
     deployerSigner,
     USDC_MINT,
-    10 * 1_000_000, // 10 USDC (6 decimals)
+    SOL_MINT,
+    50 * 1_000_000, // 100 USDC (6 decimals)
     'USDC'
   )
 
@@ -176,10 +179,13 @@ async function initializeAndFundBank(
   connection: Connection,
   deployer: Keypair,
   deployerSigner: KeyPairSigner,
-  mint: PublicKey,
+  usdcMint: PublicKey,
+  solMint: PublicKey,
   amount: number,
   tokenName: string
 ) {
+  const mint = tokenName === 'SOL' ? solMint : usdcMint;
+
   // 1. Initialize the bank. This creates a new bank account for the token (Gill instruction from Codama)
   const bankIx = await getInitializeBankInstructionAsync({
     signer: deployerSigner,
@@ -278,10 +284,8 @@ async function initializeAndFundBank(
   try {
     // Try to initialize user account - this might fail if it already exists
     // Use the current mint for user account initialization (doesn't matter which one we use)
-    const mintAdress = mint.toString()
     const userAccountIx = await getInitializeAccountInstructionAsync({
-      signer: deployerSigner,
-      usdcAddress: address(mintAdress)
+      signer: deployerSigner
     })
 
     // Convert Gill instruction to web3 with correct account permissions
@@ -346,14 +350,15 @@ async function initializeAndFundBank(
   console.log('Addresses match:', derivedBankAddress.toString() === bankAddress)
 
   // Create deposit instruction with explicit PDA addresses
-  const depositIx = getDepositInstruction({
+  const depositIx = await getDepositInstructionAsync({
     signer: deployerSigner,
     mint: address(mint.toString()),
     bank: address(derivedBankAddress.toString()),
     bankTokenAccount: address(derivedBankTokenAccountAddress.toString()),
     userAccount: address(derivedUserAccountAddress.toString()),
     userTokenAccount: address(derivedUserTokenAccount.toString()),
-    amountToDeposit: amount
+    amountToDeposit: amount,
+    tokenType: tokenName === 'SOL' ? TokenType.SOL : TokenType.USDC
   })
 
   console.log('Deposit instruction accounts:')

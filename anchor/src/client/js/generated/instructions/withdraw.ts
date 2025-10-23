@@ -40,6 +40,12 @@ import {
   getAccountMetaFactory,
   type ResolvedAccount,
 } from '../shared';
+import {
+  getTokenTypeDecoder,
+  getTokenTypeEncoder,
+  type TokenType,
+  type TokenTypeArgs,
+} from '../types';
 
 export const WITHDRAW_DISCRIMINATOR = new Uint8Array([
   183, 18, 70, 156, 148, 109, 161, 34,
@@ -106,15 +112,20 @@ export type WithdrawInstruction<
 export type WithdrawInstructionData = {
   discriminator: ReadonlyUint8Array;
   amountToWithdraw: bigint;
+  tokenType: TokenType;
 };
 
-export type WithdrawInstructionDataArgs = { amountToWithdraw: number | bigint };
+export type WithdrawInstructionDataArgs = {
+  amountToWithdraw: number | bigint;
+  tokenType: TokenTypeArgs;
+};
 
 export function getWithdrawInstructionDataEncoder(): FixedSizeEncoder<WithdrawInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['amountToWithdraw', getU64Encoder()],
+      ['tokenType', getTokenTypeEncoder()],
     ]),
     (value) => ({ ...value, discriminator: WITHDRAW_DISCRIMINATOR })
   );
@@ -124,6 +135,7 @@ export function getWithdrawInstructionDataDecoder(): FixedSizeDecoder<WithdrawIn
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['amountToWithdraw', getU64Decoder()],
+    ['tokenType', getTokenTypeDecoder()],
   ]);
 }
 
@@ -171,6 +183,7 @@ export type WithdrawAsyncInput<
   /** System program to create the account */
   systemProgram?: Address<TAccountSystemProgram>;
   amountToWithdraw: WithdrawInstructionDataArgs['amountToWithdraw'];
+  tokenType: WithdrawInstructionDataArgs['tokenType'];
 };
 
 export async function getWithdrawInstructionAsync<
@@ -357,6 +370,7 @@ export type WithdrawInput<
   /** System program to create the account */
   systemProgram?: Address<TAccountSystemProgram>;
   amountToWithdraw: WithdrawInstructionDataArgs['amountToWithdraw'];
+  tokenType: WithdrawInstructionDataArgs['tokenType'];
 };
 
 export function getWithdrawInstruction<

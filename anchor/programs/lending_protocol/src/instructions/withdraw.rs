@@ -10,7 +10,7 @@ use anchor_spl::{
 
 use crate::{
     errors::ErrorCode,
-    state::{Bank, User},
+    state::{Bank, TokenType, User},
 };
 
 /// Define the struct needed for our context to create the instruction for withdrawing from a bank
@@ -72,16 +72,15 @@ pub struct Withdraw<'info> {
 /// Instruction to process the withdrawal.
 ///
 /// Before processing the withdrawal, we need to check if the user has depossited enough tokens to be able to withdraw. User cannot withdraw tokens that they already deposited.
-pub fn process_withdraw(ctx: Context<Withdraw>, amount_to_withdraw: u64) -> Result<()> {
+pub fn process_withdraw(ctx: Context<Withdraw>, amount_to_withdraw: u64, token_type: TokenType) -> Result<()> {
     let bank_account = &mut ctx.accounts.bank;
     let user_account = &mut ctx.accounts.user_account;
 
     // Verify that the user has deposited enough tokens to be able to withdraw
     let deposited_tokens: u64;
-    if user_account.usdc_address == ctx.accounts.mint.to_account_info().key() {
-        deposited_tokens = user_account.deposited_usdc;
-    } else {
-        deposited_tokens = user_account.deposited_sol;
+    match token_type {
+        TokenType::SOL => deposited_tokens = user_account.deposited_sol,
+        TokenType::USDC => deposited_tokens = user_account.deposited_usdc,
     }
 
     // Cal. the interest that the user has earned since the last time they deposited
@@ -150,26 +149,32 @@ pub fn process_withdraw(ctx: Context<Withdraw>, amount_to_withdraw: u64) -> Resu
 
     // First update the user's deposited amount to reflect accrued interest
     let user_shares: f64;
-    if user_account.usdc_address == ctx.accounts.mint.to_account_info().key() {
-        user_shares = user_account.deposited_usdc_shares as f64;
-        // Update deposited amount with interest
-        user_account.deposited_usdc = ((user_account.deposited_usdc as f64) * E.powf(time_diff as f64 * bank_account.interest_rate as f64)) as u64;
-    } else {
-        user_shares = user_account.deposited_sol_shares as f64;
-        // Update deposited amount with interest
-        user_account.deposited_sol = ((user_account.deposited_sol as f64) * E.powf(time_diff as f64 * bank_account.interest_rate as f64)) as u64;
+    match token_type {
+        TokenType::USDC => {
+            user_shares = user_account.deposited_usdc_shares as f64;
+            // Update deposited amount with interest
+            user_account.deposited_usdc = ((user_account.deposited_usdc as f64) * E.powf(time_diff as f64 * bank_account.interest_rate as f64)) as u64;
+        },
+        TokenType::SOL => {
+            user_shares = user_account.deposited_sol_shares as f64;
+            // Update deposited amount with interest
+            user_account.deposited_sol = ((user_account.deposited_sol as f64) * E.powf(time_diff as f64 * bank_account.interest_rate as f64)) as u64;
+        },
     }
 
     // Ensure we don't withdraw more shares than the user has
     let actual_shares_to_withdraw = shares_to_withdraw.min(user_shares);
 
     // Match the asset type and update the state of the user account
-    if user_account.usdc_address == ctx.accounts.mint.to_account_info().key() {
-        user_account.deposited_usdc -= amount_to_withdraw;
-        user_account.deposited_usdc_shares -= actual_shares_to_withdraw as u64;
-    } else {
-        user_account.deposited_sol -= amount_to_withdraw;
-        user_account.deposited_sol_shares -= actual_shares_to_withdraw as u64;
+    match token_type {
+        TokenType::USDC => {
+            user_account.deposited_usdc -= amount_to_withdraw;
+            user_account.deposited_usdc_shares -= actual_shares_to_withdraw as u64;
+        },
+        TokenType::SOL => {
+            user_account.deposited_sol -= amount_to_withdraw;
+            user_account.deposited_sol_shares -= actual_shares_to_withdraw as u64;
+        },
     }
 
     // Finally update the state of the bank account

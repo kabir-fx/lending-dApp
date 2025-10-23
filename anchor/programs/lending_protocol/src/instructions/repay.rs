@@ -8,7 +8,7 @@ use anchor_spl::{
     token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 
-use crate::errors::ErrorCode;
+use crate::{errors::ErrorCode, state::TokenType};
 use crate::state::{Bank, User};
 
 #[derive(Accounts)]
@@ -69,15 +69,14 @@ pub struct Repay<'info> {
 /// Esentially we are making a CPI transfer from the user token account to the bank token account to repay the borrowed asset.
 ///
 /// We will also have to perfrom a basic check to ensure that the user doesn't repay more than they borrowed.
-pub fn process_repay(ctx: Context<Repay>, amount_to_repay: u64) -> Result<()> {
+pub fn process_repay(ctx: Context<Repay>, amount_to_repay: u64, token_type: TokenType) -> Result<()> {
     let bank_account = &mut ctx.accounts.bank;
     let user_account = &mut ctx.accounts.user_account;
 
     let borrowed_tokens: u64;
-    if user_account.usdc_address == ctx.accounts.mint.to_account_info().key() {
-        borrowed_tokens = user_account.borrowed_usdc;
-    } else {
-        borrowed_tokens = user_account.borrowed_sol;
+    match token_type {
+        TokenType::USDC => borrowed_tokens = user_account.borrowed_usdc,
+        TokenType::SOL => borrowed_tokens = user_account.borrowed_sol,
     }
 
     // Cal. the interest to be paid alongside the borrowed amount since the last time the user borrowed
@@ -137,12 +136,12 @@ pub fn process_repay(ctx: Context<Repay>, amount_to_repay: u64) -> Result<()> {
         .checked_mul(borrow_ratio)
         .unwrap();
 
-    match ctx.accounts.mint.to_account_info().key() {
-        key if key == user_account.usdc_address => {
+    match token_type {
+        TokenType::USDC => {
             user_account.borrowed_usdc -= amount_to_repay;
             user_account.borrowed_usdc_shares -= user_shares as u64;
         }
-        _ => {
+        TokenType::SOL => {
             user_account.borrowed_sol -= amount_to_repay;
             user_account.borrowed_sol_shares -= user_shares as u64;
         }

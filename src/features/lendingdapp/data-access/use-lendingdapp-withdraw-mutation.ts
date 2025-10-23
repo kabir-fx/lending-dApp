@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { UiWalletAccount, useWalletUiSigner } from '@wallet-ui/react'
 import { useSolana } from '@/components/solana/use-solana'
 import { address } from 'gill'
-import { getWithdrawInstructionAsync } from '@project/anchor'
+import { getWithdrawInstructionAsync, TokenType } from '@project/anchor'
 import { toast } from 'sonner'
 import { toastTx } from '@/components/toast-tx'
 import { Connection, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js'
@@ -43,7 +43,8 @@ export function useLendingdappWithdrawMutation({ account }: { account: UiWalletA
         const gillIx = await getWithdrawInstructionAsync({
           signer,
           mint: mintAddress,
-          amountToWithdraw: amountInSmallestUnit
+          amountToWithdraw: amountInSmallestUnit,
+          tokenType: token === 'SOL' ? TokenType.SOL : TokenType.USDC
         })
 
         const web3Ix = new TransactionInstruction({

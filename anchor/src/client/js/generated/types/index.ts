@@ -7,4 +7,5 @@
  */
 
 export * from './priceFeedMessage';
+export * from './tokenType';
 export * from './verificationLevel';

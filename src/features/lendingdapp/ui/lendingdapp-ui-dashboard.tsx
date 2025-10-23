@@ -71,8 +71,8 @@ export function LendingdappUiDashboard({
                     <div className="flex justify-between items-center">
                       <div>
                         <div className="text-sm text-gray-600">{bank.type} Pool</div>
-                        <div className="text-lg font-semibold">
-                          {Number((bank.totalDeposits - bank.totalBorrows))} {bank.type}
+                        <div className="text-lg text-gray-600">
+                          {Number((bank.totalDeposits - bank.totalBorrows)) / (bank.type === 'SOL' ? 1_000_000_000 : 1_000_000)} {bank.type}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
                           Total Deposits: {Number(bank.totalDeposits) / (bank.type === 'SOL' ? 1_000_000_000 : 1_000_000)} {bank.type}

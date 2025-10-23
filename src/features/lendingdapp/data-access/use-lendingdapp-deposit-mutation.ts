@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSolana } from '@/components/solana/use-solana'
 import { UiWalletAccount, useWalletUiSigner } from '@wallet-ui/react'
-import { getDepositInstructionAsync } from '@project/anchor'
+import { getDepositInstructionAsync, TokenType } from '@project/anchor'
 import { toastTx } from '@/components/toast-tx'
 import { toast } from 'sonner'
 import { address } from 'gill'
@@ -61,7 +61,8 @@ export function useLendingdappDepositMutation({ account }: { account: UiWalletAc
         const gillIx = await getDepositInstructionAsync({
           signer,
           mint: mintAddress,
-          amountToDeposit: amountInSmallestUnit
+          amountToDeposit: amountInSmallestUnit,
+          tokenType: token === 'SOL' ? TokenType.SOL : TokenType.USDC
         })
         console.log('Instruction generated:', gillIx)
 

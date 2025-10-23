@@ -12,7 +12,7 @@ use pyth_solana_receiver_sdk::price_update::{get_feed_id_from_hex, PriceUpdateV2
 use crate::{
     constants::{MAX_AGE, SOL_USD_FEED_ID, USDC_USD_FEED_ID},
     errors::ErrorCode,
-    state::{Bank, User},
+    state::{Bank, User, TokenType},
 };
 
 /// Define the struct needed for our context to create the instruction for borrowing assets
@@ -77,7 +77,7 @@ pub struct Borrow<'info> {
 /// Instruction to process the borrow.
 ///
 /// Before processing the borrow, we need to check if the user has deposited enough collateral to be able to borrow the desired amount.
-pub fn process_borrow(ctx: Context<Borrow>, amount_to_borrow: u64) -> Result<()> {
+pub fn process_borrow(ctx: Context<Borrow>, amount_to_borrow: u64, token_type: TokenType) -> Result<()> {
     let bank_account = &mut ctx.accounts.bank;
     let user_account = &mut ctx.accounts.user_account;
 
@@ -85,7 +85,8 @@ pub fn process_borrow(ctx: Context<Borrow>, amount_to_borrow: u64) -> Result<()>
 
     // Cal. the total collateral a user holds
     let total_collateral: u64 =
-        if user_account.usdc_address == ctx.accounts.mint.to_account_info().key() {
+    match token_type {
+        TokenType::USDC => {
             // If the user is passing USDC as key, means that they have their collateral in SOL
             let sol_feed_id = get_feed_id_from_hex(SOL_USD_FEED_ID)?;
             let sol_price =
@@ -98,7 +99,8 @@ pub fn process_borrow(ctx: Context<Borrow>, amount_to_borrow: u64) -> Result<()>
             )?;
 
             sol_price.price as u64 * new_value
-        } else {
+        }
+        TokenType::SOL => {
             let usdc_feed_id = get_feed_id_from_hex(USDC_USD_FEED_ID)?;
             let usdc_price =
                 price_update.get_price_no_older_than(&Clock::get()?, MAX_AGE, &usdc_feed_id)?;
@@ -110,7 +112,8 @@ pub fn process_borrow(ctx: Context<Borrow>, amount_to_borrow: u64) -> Result<()>
             )?;
 
             usdc_price.price as u64 * new_value
-        };
+        }
+    };
 
     // Calculate the borrowable amount that a user can borrow against their collateral
     let borrowable_amount = total_collateral
@@ -162,12 +165,12 @@ pub fn process_borrow(ctx: Context<Borrow>, amount_to_borrow: u64) -> Result<()>
         .checked_mul(borrow_ratio)
         .unwrap();
 
-    match ctx.accounts.mint.to_account_info().key() {
-        key if key == user_account.usdc_address => {
+    match token_type {
+        TokenType::USDC => {
             user_account.borrowed_usdc += amount_to_borrow;
             user_account.borrowed_usdc_shares += user_shares;
         }
-        _ => {
+        TokenType::SOL => {
             user_account.borrowed_sol += amount_to_borrow;
             user_account.borrowed_sol_shares += user_shares;
         }

@@ -6,7 +6,8 @@ use anchor_spl::{
     token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 
-use crate::state::{Bank, User};
+use crate::errors::ErrorCode;
+use crate::state::{Bank, TokenType, User};
 
 /// Define all the accounts needed for the deposit instruction
 #[derive(Accounts)]
@@ -68,7 +69,7 @@ pub struct Deposit<'info> {
 /// 2. Calculate the new shared added to the bank and to the user
 /// 3. Update the user's deposited amount and total collateral value
 /// 4. Update the bank's total deposits and total deposits shares
-pub fn process_deposit(ctx: Context<Deposit>, amount_to_deposit: u64) -> Result<()> {
+pub fn process_deposit(ctx: Context<Deposit>, amount_to_deposit: u64, token_type: TokenType) -> Result<()> {
     // CPI Transfer
     let transfer_cpi_accounts = TransferChecked {
         // From user's token account
@@ -121,14 +122,12 @@ pub fn process_deposit(ctx: Context<Deposit>, amount_to_deposit: u64) -> Result<
     let user_account = &mut ctx.accounts.user_account;
 
     // Since we are only using SOL and USDC we will use a simple match comparison to indentify and update the corresponding assests.
-    match ctx.accounts.mint.to_account_info().key() {
-        // USDC
-        key if key == user_account.usdc_address => {
+    match token_type {
+        TokenType::USDC => {
             user_account.deposited_usdc += amount_to_deposit;
             user_account.deposited_usdc_shares += user_shares;
         }
-        // SOL
-        _ => {
+        TokenType::SOL => {
             user_account.deposited_sol += amount_to_deposit;
             user_account.deposited_sol_shares += user_shares;
         }

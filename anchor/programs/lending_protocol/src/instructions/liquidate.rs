@@ -11,7 +11,7 @@ use pyth_solana_receiver_sdk::price_update::{get_feed_id_from_hex, PriceUpdateV2
 use crate::{
     constants::{MAX_AGE, SOL_USD_FEED_ID, USDC_USD_FEED_ID},
     errors::ErrorCode,
-    state::{Bank, User},
+    state::{Bank, User, TokenType},
 };
 
 #[derive(Accounts)]
@@ -93,7 +93,7 @@ pub struct Liquidate<'info> {
 }
 
 /// Logic: a liquidator is able to come to a protocol and repay the debt of an unhealthy account, and in return they recieve the collateral + a liquidation bonus - a bonus of the liquidation amount that they receive to incentivize them to liquidate.
-pub fn process_liquidate(ctx: Context<Liquidate>) -> Result<()> {
+pub fn process_liquidate(ctx: Context<Liquidate>, token_type: TokenType) -> Result<()> {
     // Verifying that the account is indeed unhealthy to process the liquidation
 
     let collateral_bank = &mut ctx.accounts.collateral_bank;
@@ -115,8 +115,8 @@ pub fn process_liquidate(ctx: Context<Liquidate>) -> Result<()> {
     let total_collateral_value: u64;
     let total_borrowed_value: u64;
 
-    match ctx.accounts.collateral_mint.to_account_info().key() {
-        key if key == liquidator_user_account.usdc_address => {
+    match token_type {
+        TokenType::USDC => {
             let new_usdc_price = calculate_accrued_interest(
                 liquidator_user_account.deposited_usdc,
                 collateral_bank.interest_rate,
@@ -132,8 +132,8 @@ pub fn process_liquidate(ctx: Context<Liquidate>) -> Result<()> {
             )?;
 
             total_borrowed_value = new_sol_price * sol_price.price as u64;
-        }
-        _ => {
+        },
+        TokenType::SOL => {
             let new_sol_price = calculate_accrued_interest(
                 liquidator_user_account.deposited_sol,
                 collateral_bank.interest_rate,
@@ -149,7 +149,7 @@ pub fn process_liquidate(ctx: Context<Liquidate>) -> Result<()> {
             )?;
 
             total_borrowed_value = new_usdc_price * usdc_price.price as u64;
-        }
+        },
     }
 
     // Cal. the health factor to ensure that the account is healthy. Is the HF < 1, then the account is unhealthy.

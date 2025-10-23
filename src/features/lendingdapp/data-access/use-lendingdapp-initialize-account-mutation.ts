@@ -51,7 +51,6 @@ export function useLendingdappInitializeAccountMutation({ account }: { account: 
 
       const instruction = await getInitializeAccountInstructionAsync({
         signer,
-        usdcAddress: address(banksConfig.USDC_MINT)
       })
       return await signAndSend(instruction, signer)
     },

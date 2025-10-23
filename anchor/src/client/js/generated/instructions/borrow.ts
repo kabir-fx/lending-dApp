@@ -40,6 +40,12 @@ import {
   getAccountMetaFactory,
   type ResolvedAccount,
 } from '../shared';
+import {
+  getTokenTypeDecoder,
+  getTokenTypeEncoder,
+  type TokenType,
+  type TokenTypeArgs,
+} from '../types';
 
 export const BORROW_DISCRIMINATOR = new Uint8Array([
   228, 253, 131, 202, 207, 116, 89, 18,
@@ -110,15 +116,20 @@ export type BorrowInstruction<
 export type BorrowInstructionData = {
   discriminator: ReadonlyUint8Array;
   amountToBorrow: bigint;
+  tokenType: TokenType;
 };
 
-export type BorrowInstructionDataArgs = { amountToBorrow: number | bigint };
+export type BorrowInstructionDataArgs = {
+  amountToBorrow: number | bigint;
+  tokenType: TokenTypeArgs;
+};
 
 export function getBorrowInstructionDataEncoder(): FixedSizeEncoder<BorrowInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['amountToBorrow', getU64Encoder()],
+      ['tokenType', getTokenTypeEncoder()],
     ]),
     (value) => ({ ...value, discriminator: BORROW_DISCRIMINATOR })
   );
@@ -128,6 +139,7 @@ export function getBorrowInstructionDataDecoder(): FixedSizeDecoder<BorrowInstru
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['amountToBorrow', getU64Decoder()],
+    ['tokenType', getTokenTypeDecoder()],
   ]);
 }
 
@@ -178,6 +190,7 @@ export type BorrowAsyncInput<
   /** System program to POTENTIALLY create a new account and also because it's required by the instruction */
   systemProgram?: Address<TAccountSystemProgram>;
   amountToBorrow: BorrowInstructionDataArgs['amountToBorrow'];
+  tokenType: BorrowInstructionDataArgs['tokenType'];
 };
 
 export async function getBorrowInstructionAsync<
@@ -373,6 +386,7 @@ export type BorrowInput<
   /** System program to POTENTIALLY create a new account and also because it's required by the instruction */
   systemProgram?: Address<TAccountSystemProgram>;
   amountToBorrow: BorrowInstructionDataArgs['amountToBorrow'];
+  tokenType: BorrowInstructionDataArgs['tokenType'];
 };
 
 export function getBorrowInstruction<

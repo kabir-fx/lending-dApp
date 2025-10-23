@@ -99,16 +99,13 @@ pub fn process_initialize_bank(
 
 /// Instruction to initialize the user account
 ///
-/// Initialization happened in the stuct so here is - saving the infromation we need to the account state of the user. Current USDC address is hardcoded since we need to check it throughout the program.
+/// Initialization happened in the stuct so here is - saving the infromation we need to the account state of the user.
 pub fn process_initialize_account(
-    ctx: Context<InitializeAccount>,
-    usdc_address: Pubkey,
+    ctx: Context<InitializeAccount>
 ) -> Result<()> {
     let user = &mut ctx.accounts.user_account;
 
     user.owner = ctx.accounts.signer.key();
-
-    user.usdc_address = usdc_address;
 
     Ok(())
 }

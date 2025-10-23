@@ -12,9 +12,6 @@ export default function LendingdappFeature() {
   const { data: userAccount } = useLendingdappUserAccount(account?.address)
   const { data: banks, isLoading: banksLoading, error: banksError } = useLendingdappBanksQuery()
 
-  console.log('LendingdappFeature - userAccount:', userAccount)
-  console.log('LendingdappFeature - banks:', banks)
-
   // Show loading if banks are still loading (this includes waiting for config)
   if (banksLoading) {
     return (

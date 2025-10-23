@@ -38,6 +38,12 @@ import {
   getAccountMetaFactory,
   type ResolvedAccount,
 } from '../shared';
+import {
+  getTokenTypeDecoder,
+  getTokenTypeEncoder,
+  type TokenType,
+  type TokenTypeArgs,
+} from '../types';
 
 export const LIQUIDATE_DISCRIMINATOR = new Uint8Array([
   223, 179, 226, 125, 48, 46, 39, 74,
@@ -129,13 +135,19 @@ export type LiquidateInstruction<
     ]
   >;
 
-export type LiquidateInstructionData = { discriminator: ReadonlyUint8Array };
+export type LiquidateInstructionData = {
+  discriminator: ReadonlyUint8Array;
+  tokenType: TokenType;
+};
 
-export type LiquidateInstructionDataArgs = {};
+export type LiquidateInstructionDataArgs = { tokenType: TokenTypeArgs };
 
 export function getLiquidateInstructionDataEncoder(): FixedSizeEncoder<LiquidateInstructionDataArgs> {
   return transformEncoder(
-    getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)]]),
+    getStructEncoder([
+      ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
+      ['tokenType', getTokenTypeEncoder()],
+    ]),
     (value) => ({ ...value, discriminator: LIQUIDATE_DISCRIMINATOR })
   );
 }
@@ -143,6 +155,7 @@ export function getLiquidateInstructionDataEncoder(): FixedSizeEncoder<Liquidate
 export function getLiquidateInstructionDataDecoder(): FixedSizeDecoder<LiquidateInstructionData> {
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
+    ['tokenType', getTokenTypeDecoder()],
   ]);
 }
 
@@ -200,6 +213,7 @@ export type LiquidateAsyncInput<
   tokenProgram?: Address<TAccountTokenProgram>;
   /** Associated token program */
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+  tokenType: LiquidateInstructionDataArgs['tokenType'];
 };
 
 export async function getLiquidateInstructionAsync<
@@ -301,6 +315,9 @@ export async function getLiquidateInstructionAsync<
     keyof typeof originalAccounts,
     ResolvedAccount
   >;
+
+  // Original args.
+  const args = { ...input };
 
   // Resolve default values.
   if (!accounts.collateralBank.value) {
@@ -420,7 +437,9 @@ export async function getLiquidateInstructionAsync<
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
     ],
-    data: getLiquidateInstructionDataEncoder().encode({}),
+    data: getLiquidateInstructionDataEncoder().encode(
+      args as LiquidateInstructionDataArgs
+    ),
     programAddress,
   } as LiquidateInstruction<
     TProgramAddress,
@@ -485,6 +504,7 @@ export type LiquidateInput<
   tokenProgram?: Address<TAccountTokenProgram>;
   /** Associated token program */
   associatedTokenProgram?: Address<TAccountAssociatedTokenProgram>;
+  tokenType: LiquidateInstructionDataArgs['tokenType'];
 };
 
 export function getLiquidateInstruction<
@@ -585,6 +605,9 @@ export function getLiquidateInstruction<
     ResolvedAccount
   >;
 
+  // Original args.
+  const args = { ...input };
+
   // Resolve default values.
   if (!accounts.systemProgram.value) {
     accounts.systemProgram.value =
@@ -617,7 +640,9 @@ export function getLiquidateInstruction<
       getAccountMeta(accounts.tokenProgram),
       getAccountMeta(accounts.associatedTokenProgram),
     ],
-    data: getLiquidateInstructionDataEncoder().encode({}),
+    data: getLiquidateInstructionDataEncoder().encode(
+      args as LiquidateInstructionDataArgs
+    ),
     programAddress,
   } as LiquidateInstruction<
     TProgramAddress,

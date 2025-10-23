@@ -58,7 +58,6 @@ export type User = {
   depositedUsdcShares: bigint;
   borrowedUsdc: bigint;
   borrowedUsdcShares: bigint;
-  usdcAddress: Address;
   lastUpdated: bigint;
 };
 
@@ -72,7 +71,6 @@ export type UserArgs = {
   depositedUsdcShares: number | bigint;
   borrowedUsdc: number | bigint;
   borrowedUsdcShares: number | bigint;
-  usdcAddress: Address;
   lastUpdated: number | bigint;
 };
 
@@ -89,7 +87,6 @@ export function getUserEncoder(): FixedSizeEncoder<UserArgs> {
       ['depositedUsdcShares', getU64Encoder()],
       ['borrowedUsdc', getU64Encoder()],
       ['borrowedUsdcShares', getU64Encoder()],
-      ['usdcAddress', getAddressEncoder()],
       ['lastUpdated', getI64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: USER_DISCRIMINATOR })
@@ -108,7 +105,6 @@ export function getUserDecoder(): FixedSizeDecoder<User> {
     ['depositedUsdcShares', getU64Decoder()],
     ['borrowedUsdc', getU64Decoder()],
     ['borrowedUsdcShares', getU64Decoder()],
-    ['usdcAddress', getAddressDecoder()],
     ['lastUpdated', getI64Decoder()],
   ]);
 }
@@ -171,5 +167,5 @@ export async function fetchAllMaybeUser(
 }
 
 export function getUserSize(): number {
-  return 144;
+  return 112;
 }

@@ -1,5 +1,11 @@
 use anchor_lang::prelude::*;
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+pub enum TokenType {
+    SOL,
+    USDC,
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct User {
@@ -15,8 +21,6 @@ pub struct User {
     pub deposited_usdc_shares: u64,
     pub borrowed_usdc: u64,
     pub borrowed_usdc_shares: u64,
-
-    pub usdc_address: Pubkey,
 
     pub last_updated: i64,
 }

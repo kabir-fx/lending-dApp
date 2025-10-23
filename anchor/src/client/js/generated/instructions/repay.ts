@@ -40,6 +40,12 @@ import {
   getAccountMetaFactory,
   type ResolvedAccount,
 } from '../shared';
+import {
+  getTokenTypeDecoder,
+  getTokenTypeEncoder,
+  type TokenType,
+  type TokenTypeArgs,
+} from '../types';
 
 export const REPAY_DISCRIMINATOR = new Uint8Array([
   234, 103, 67, 82, 208, 234, 219, 166,
@@ -106,15 +112,20 @@ export type RepayInstruction<
 export type RepayInstructionData = {
   discriminator: ReadonlyUint8Array;
   amountToRepay: bigint;
+  tokenType: TokenType;
 };
 
-export type RepayInstructionDataArgs = { amountToRepay: number | bigint };
+export type RepayInstructionDataArgs = {
+  amountToRepay: number | bigint;
+  tokenType: TokenTypeArgs;
+};
 
 export function getRepayInstructionDataEncoder(): FixedSizeEncoder<RepayInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['amountToRepay', getU64Encoder()],
+      ['tokenType', getTokenTypeEncoder()],
     ]),
     (value) => ({ ...value, discriminator: REPAY_DISCRIMINATOR })
   );
@@ -124,6 +135,7 @@ export function getRepayInstructionDataDecoder(): FixedSizeDecoder<RepayInstruct
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['amountToRepay', getU64Decoder()],
+    ['tokenType', getTokenTypeDecoder()],
   ]);
 }
 
@@ -169,6 +181,7 @@ export type RepayAsyncInput<
   /** System program to create the account */
   systemProgram?: Address<TAccountSystemProgram>;
   amountToRepay: RepayInstructionDataArgs['amountToRepay'];
+  tokenType: RepayInstructionDataArgs['tokenType'];
 };
 
 export async function getRepayInstructionAsync<
@@ -353,6 +366,7 @@ export type RepayInput<
   /** System program to create the account */
   systemProgram?: Address<TAccountSystemProgram>;
   amountToRepay: RepayInstructionDataArgs['amountToRepay'];
+  tokenType: RepayInstructionDataArgs['tokenType'];
 };
 
 export function getRepayInstruction<
