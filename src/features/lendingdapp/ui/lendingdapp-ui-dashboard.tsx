@@ -5,7 +5,7 @@ import { LendingdappUiWithdraw } from './lendingdapp-ui-withdraw'
 import { LendingdappUiDeposit } from './lendingdapp-ui-deposit'
 import { useLendingdappBanksQuery } from '../data-access/use-lendingdapp-banks-query'
 
-interface UserAccount {
+export interface UserAccount {
   depositedSol: number
   borrowedSol: number
   depositedUsdc: number
@@ -34,25 +34,25 @@ export function LendingdappUiDashboard({
               <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="text-sm text-blue-600 font-medium">Deposited SOL</div>
                 <div className="text-2xl font-bold text-blue-900">
-                  {(userAccount.depositedSol / 1_000_000_000).toFixed(4)} SOL
+                  {(userAccount.depositedSol / 1_000_000_000).toFixed(9)} SOL
                 </div>
               </div>
               <div className="bg-red-50 p-4 rounded-lg">
                 <div className="text-sm text-red-600 font-medium">Borrowed SOL</div>
                 <div className="text-2xl font-bold text-red-900">
-                  {(userAccount.borrowedSol / 1_000_000_000).toFixed(4)} SOL
+                  {(userAccount.borrowedSol / 1_000_000_000).toFixed(9)} SOL
                 </div>
               </div>
               <div className="bg-green-50 p-4 rounded-lg">
                 <div className="text-sm text-green-600 font-medium">Deposited USDC</div>
                 <div className="text-2xl font-bold text-green-900">
-                  {(userAccount.depositedUsdc / 1_000_000).toFixed(2)} USDC
+                  {(userAccount.depositedUsdc / 1_000_000).toFixed(9)} USDC
                 </div>
               </div>
               <div className="bg-orange-50 p-4 rounded-lg">
                 <div className="text-sm text-orange-600 font-medium">Borrowed USDC</div>
                 <div className="text-2xl font-bold text-orange-900">
-                  {(userAccount.borrowedUsdc / 1_000_000).toFixed(2)} USDC
+                  {(userAccount.borrowedUsdc / 1_000_000).toFixed(9)} USDC
                 </div>
               </div>
             </div>
@@ -72,8 +72,7 @@ export function LendingdappUiDashboard({
                       <div>
                         <div className="text-sm text-gray-600">{bank.type} Pool</div>
                         <div className="text-lg font-semibold">
-                          {Number((bank.totalDeposits - bank.totalBorrows) /
-                            BigInt(bank.type === 'SOL' ? 1_000_000_000 : 1_000_000)).toFixed(4)} {bank.type}
+                          {Number((bank.totalDeposits - bank.totalBorrows))} {bank.type}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
                           Total Deposits: {Number(bank.totalDeposits) / (bank.type === 'SOL' ? 1_000_000_000 : 1_000_000)} {bank.type}
@@ -113,7 +112,7 @@ export function LendingdappUiDashboard({
             <div className="space-y-4">
               <h3 className="font-semibold text-lg text-blue-700">Withdraw Tokens</h3>
               <p className="text-sm text-gray-600 mb-4">Remove your deposited SOL or USDC</p>
-              <LendingdappUiWithdraw account={account} />
+              <LendingdappUiWithdraw account={account} userAccount={userAccount} />
             </div>
           </div>
 

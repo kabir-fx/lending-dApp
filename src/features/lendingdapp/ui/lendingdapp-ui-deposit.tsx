@@ -9,7 +9,11 @@ import { useLendingdappTokenBalance } from '../data-access/use-lendingdapp-token
 export function LendingdappUiDeposit({ account }: { account: UiWalletAccount }) {
   const [amount, setAmount] = useState('')
   const [selectedToken, setSelectedToken] = useState<'SOL' | 'USDC'>('SOL')
+
+  // Mutation hook handles the actual deposit logic
   const mutation = useLendingdappDepositMutation({ account })
+
+  // Get user's token balance for validation
   const { data: balance } = useLendingdappTokenBalance({ account, token: selectedToken })
 
   return (
@@ -42,7 +46,7 @@ export function LendingdappUiDeposit({ account }: { account: UiWalletAccount }) 
         <div className="flex justify-between items-center">
           <Label htmlFor="deposit-amount" className="text-sm font-medium">Amount</Label>
           <span className="text-xs text-gray-500">
-            Balance: {balance !== undefined ? balance.toFixed(selectedToken === 'SOL' ? 4 : 2) : '...'} {selectedToken}
+            Balance: {balance !== undefined ? balance.toFixed(selectedToken === 'SOL' ? 9 : 6) : '...'} {selectedToken}
           </span>
         </div>
         <Input
@@ -53,7 +57,7 @@ export function LendingdappUiDeposit({ account }: { account: UiWalletAccount }) 
           onChange={(e) => setAmount(e.target.value)}
           className="w-full"
           min="0"
-          step={selectedToken === 'SOL' ? '0.01' : '0.1'}
+          step={selectedToken === 'SOL' ? '0.001' : '0.1'}
           max={balance || 0}
         />
         {balance !== undefined && balance === 0 && (

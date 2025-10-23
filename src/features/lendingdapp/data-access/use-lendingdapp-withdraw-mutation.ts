@@ -59,13 +59,18 @@ export function useLendingdappWithdrawMutation({ account }: { account: UiWalletA
         const tx = new Transaction().add(web3Ix)
         const { blockhash } = await connection.getLatestBlockhash()
         tx.recentBlockhash = blockhash
-        const phantom = (window as any).solana
-        if (!phantom?.publicKey) throw new Error('Wallet not connected')
-        tx.feePayer = phantom.publicKey
 
-        const signedTx = await phantom.signTransaction(tx)
+        const userWallet = (window as any).solana
+        if (!userWallet?.publicKey) throw new Error('Wallet not connected')
+        tx.feePayer = userWallet.publicKey
+
+        const signedTx = await userWallet.signTransaction(tx)
         const signature = await connection.sendRawTransaction(signedTx.serialize())
-        await connection.confirmTransaction(signature, 'confirmed')
+        await connection.confirmTransaction({
+          signature,
+          ...(await connection.getLatestBlockhash())
+        })
+        
         return signature
       } catch (e) {
         console.error('Withdraw tx error:', e)

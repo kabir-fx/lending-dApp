@@ -4,8 +4,9 @@ import { Label } from '@/components/ui/label'
 import { UiWalletAccount } from '@wallet-ui/react'
 import { useState } from 'react'
 import { useLendingdappWithdrawMutation } from '../data-access/use-lendingdapp-withdraw-mutation'
+import { UserAccount } from './lendingdapp-ui-dashboard'
 
-export function LendingdappUiWithdraw({ account }: { account: UiWalletAccount }) {
+export function LendingdappUiWithdraw({ account, userAccount }: { account: UiWalletAccount, userAccount: UserAccount }) {
   const [amount, setAmount] = useState('')
   const [selectedToken, setSelectedToken] = useState<'SOL' | 'USDC'>('SOL')
   const mutation = useLendingdappWithdrawMutation({ account })
@@ -16,21 +17,19 @@ export function LendingdappUiWithdraw({ account }: { account: UiWalletAccount })
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
         <button
           onClick={() => setSelectedToken('SOL')}
-          className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
-            selectedToken === 'SOL'
+          className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${selectedToken === 'SOL'
               ? 'bg-white text-gray-900 shadow-sm'
               : 'text-gray-600 hover:text-gray-900'
-          }`}
+            }`}
         >
           SOL
         </button>
         <button
           onClick={() => setSelectedToken('USDC')}
-          className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
-            selectedToken === 'USDC'
+          className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${selectedToken === 'USDC'
               ? 'bg-white text-gray-900 shadow-sm'
               : 'text-gray-600 hover:text-gray-900'
-          }`}
+            }`}
         >
           USDC
         </button>
@@ -52,7 +51,13 @@ export function LendingdappUiWithdraw({ account }: { account: UiWalletAccount })
 
       <Button
         onClick={() => mutation.mutateAsync({ amount: parseFloat(amount), token: selectedToken })}
-        disabled={mutation.isPending || !amount || parseFloat(amount) <= 0}
+        disabled={
+          mutation.isPending ||
+          !amount ||
+          parseFloat(amount) <= 0 ||
+          (selectedToken === 'SOL' && userAccount.depositedSol !== undefined && parseFloat(amount) > userAccount.depositedSol / 1_000_000_000) ||
+          (selectedToken === 'USDC' && userAccount.depositedUsdc !== undefined && parseFloat(amount) > userAccount.depositedUsdc / 1_000_000)
+        }
         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
       >
         {mutation.isPending ? 'Withdrawing...' : `Withdraw ${selectedToken}`}
@@ -60,6 +65,3 @@ export function LendingdappUiWithdraw({ account }: { account: UiWalletAccount })
     </div>
   )
 }
-
-
-
