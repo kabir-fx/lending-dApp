@@ -6,7 +6,6 @@ use anchor_spl::{
     token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
 };
 
-use crate::errors::ErrorCode;
 use crate::state::{Bank, TokenType, User};
 
 /// Define all the accounts needed for the deposit instruction
