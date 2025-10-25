@@ -7,7 +7,7 @@ import { useBanksConfig } from './use-bank-config'
 
 export function useLendingdappTokenBalance({ account, token }: { account: UiWalletAccount; token: 'SOL' | 'USDC' }) {
   const { cluster } = useSolana()
-  const banksConfig = useBanksConfig()
+  const { config: banksConfig } = useBanksConfig()
 
   return useQuery({
     queryKey: ['lendingdapp', 'token-balance', account.address, token, { cluster }],
@@ -16,8 +16,8 @@ export function useLendingdappTokenBalance({ account, token }: { account: UiWall
 
       const connection = new Connection('http://127.0.0.1:8899', 'confirmed')
       const mintAddress = token === 'SOL'
-        ? banksConfig.config.SOL_MINT
-        : banksConfig.config.USDC_MINT
+        ? banksConfig.SOL_MINT
+        : banksConfig.USDC_MINT
 
       try {
         // Get the associated token account for this user and mint
@@ -39,6 +39,8 @@ export function useLendingdappTokenBalance({ account, token }: { account: UiWall
       }
     },
     enabled: !!banksConfig && !!account.address,
-    staleTime: 10000, // 10 seconds
+    staleTime: 3000, // 3 seconds
+    refetchInterval: 5000, // Refetch every 5 seconds to keep balance fresh
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   })
 }

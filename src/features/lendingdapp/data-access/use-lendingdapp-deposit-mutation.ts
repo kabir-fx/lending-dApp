@@ -103,15 +103,17 @@ export function useLendingdappDepositMutation({ account }: { account: UiWalletAc
     },
     
     // Shows a success toast with transaction link
-    onSuccess: async (tx) => {
+    onSuccess: async (tx, { token }) => {
       // Show success notification with explorer link
       toastTx(tx)
 
       // Invalidates queries to refresh user balance and bank data on the UI after successful deposit
-      await queryClient.invalidateQueries({ 
-        queryKey: ['lendingdapp', 'user', account.address.toString(), { cluster }] 
+      await queryClient.invalidateQueries({
+        queryKey: ['lendingdapp', 'user', account.address.toString(), { cluster }]
       })
       await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'banks', { cluster }] })
+      // Invalidate token balance query for the deposited token
+      await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'token-balance', account.address, token, { cluster }] })
 
       window.location.reload()
     },

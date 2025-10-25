@@ -76,13 +76,15 @@ export function useLendingdappWithdrawMutation({ account }: { account: UiWalletA
         throw e
       }
     },
-    onSuccess: async (tx) => {
+    onSuccess: async (tx, { token }) => {
       toastTx(tx)
-      
-      await queryClient.invalidateQueries({ 
-        queryKey: ['lendingdapp', 'user', account.address.toString(), { cluster }] 
+
+      await queryClient.invalidateQueries({
+        queryKey: ['lendingdapp', 'user', account.address.toString(), { cluster }]
       })
-await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'banks', { cluster }] })
+      await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'banks', { cluster }] })
+      // Invalidate token balance query for the withdrawn token
+      await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'token-balance', account.address, token, { cluster }] })
 
       window.location.reload()
     },

@@ -42,7 +42,7 @@ export type Connection = SolanaConnection | BankrunConnection;
 
 type BankrunTransactionMetaNormalized = {
   logMessages: string[];
-  err: TransactionError;
+  err: TransactionError | null;
 };
 
 type BankrunTransactionRespose = {
@@ -134,26 +134,26 @@ export class BankrunContextWrapper {
   }
 }
 
-export class BankrunConnection {
-  private readonly _banksClient: BanksClient;
-  private readonly context: ProgramTestContext;
-  private transactionToMeta: Map<
-    TransactionSignature,
-    BanksTransactionResultWithMeta
-  > = new Map();
-  private clock: Clock;
+  export class BankrunConnection {
+    private readonly _banksClient: BanksClient;
+    private readonly context: ProgramTestContext;
+    private transactionToMeta: Map<
+      TransactionSignature,
+      BanksTransactionResultWithMeta
+    > = new Map();
+    private clock!: Clock;
 
-  private nextClientSubscriptionId = 0;
-  private onLogCallbacks = new Map<number, LogsCallback>();
-  private onAccountChangeCallbacks = new Map<
-    number,
-    [PublicKey, AccountChangeCallback]
-  >();
+    private nextClientSubscriptionId = 0;
+    private onLogCallbacks = new Map<number, LogsCallback>();
+    private onAccountChangeCallbacks = new Map<
+      number,
+      [PublicKey, AccountChangeCallback]
+    >();
 
-  constructor(banksClient: BanksClient, context: ProgramTestContext) {
-    this._banksClient = banksClient;
-    this.context = context;
-  }
+    constructor(banksClient: BanksClient, context: ProgramTestContext) {
+      this._banksClient = banksClient;
+      this.context = context;
+    }
 
   getSlot(): Promise<bigint> {
     return this._banksClient.getSlot();
@@ -165,6 +165,9 @@ export class BankrunConnection {
 
   async getTokenAccount(publicKey: PublicKey): Promise<Account> {
     const info = await this.getAccountInfo(publicKey);
+    if (!info) {
+      throw new Error(`Account not found: ${publicKey.toBase58()}`);
+    }
     return unpackAccount(publicKey, info, info.owner);
   }
 
@@ -172,11 +175,13 @@ export class BankrunConnection {
     publicKeys: PublicKey[],
     _commitmentOrConfig?: Commitment
   ): Promise<AccountInfo<Buffer>[]> {
-    const accountInfos = [];
+    const accountInfos: AccountInfo<Buffer>[] = [];
 
     for (const publicKey of publicKeys) {
       const accountInfo = await this.getAccountInfo(publicKey);
-      accountInfos.push(accountInfo);
+      if (accountInfo) {
+        accountInfos.push(accountInfo);
+      }
     }
 
     return accountInfos;
@@ -212,14 +217,16 @@ export class BankrunConnection {
     if (banksTransactionMeta.result) {
       throw new Error(banksTransactionMeta.result);
     }
-    const signature = bs58.encode(tx.signatures[0].signature);
+    const signature = bs58.encode(tx.signatures[0].signature!);
     this.transactionToMeta.set(signature, banksTransactionMeta);
     let finalizedCount = 0;
     while (finalizedCount < 10) {
-      const signatureStatus = (await this.getSignatureStatus(signature)).value
-        .confirmationStatus;
-      if (signatureStatus.toString() == '"finalized"') {
-        finalizedCount += 1;
+      const statusResponse = await this.getSignatureStatus(signature);
+      if (statusResponse.value && statusResponse.value.confirmationStatus) {
+        const signatureStatus = statusResponse.value.confirmationStatus;
+        if (signatureStatus.toString() == '"finalized"') {
+          finalizedCount += 1;
+        }
       }
     }
 
@@ -234,14 +241,16 @@ export class BankrunConnection {
     if (this.onLogCallbacks.size > 0) {
       const transaction = await this.getTransaction(signature);
 
-      const context = { slot: transaction.slot };
-      const logs = {
-        logs: transaction.meta.logMessages,
-        err: transaction.meta.err,
-        signature,
-      };
-      for (const logCallback of this.onLogCallbacks.values()) {
-        logCallback(logs, context);
+      if (transaction) {
+        const context = { slot: transaction.slot };
+        const logs = {
+          logs: transaction.meta.logMessages,
+          err: transaction.meta.err,
+          signature,
+        };
+        for (const logCallback of this.onLogCallbacks.values()) {
+          logCallback(logs, context);
+        }
       }
     }
 
@@ -250,7 +259,9 @@ export class BankrunConnection {
       callback,
     ] of this.onAccountChangeCallbacks.values()) {
       const accountInfo = await this.getParsedAccountInfo(publicKey);
-      callback(accountInfo.value, accountInfo.context);
+      if (accountInfo.value) {
+        callback(accountInfo.value, accountInfo.context);
+      }
     }
 
     return signature;
@@ -278,7 +289,7 @@ export class BankrunConnection {
 
   async getParsedAccountInfo(
     publicKey: PublicKey
-  ): Promise<RpcResponseAndContext<AccountInfo<Buffer>>> {
+  ): Promise<RpcResponseAndContext<AccountInfo<Buffer> | null>> {
     const accountInfoBytes = await this._banksClient.getAccount(publicKey);
     if (accountInfoBytes === null) {
       return {
@@ -303,6 +314,9 @@ export class BankrunConnection {
     const blockhashAndBlockheight = await this._banksClient.getLatestBlockhash(
       commitment
     );
+    if (!blockhashAndBlockheight) {
+      throw new Error('Failed to get latest blockhash');
+    }
     return {
       blockhash: blockhashAndBlockheight[0],
       lastValidBlockHeight: Number(blockhashAndBlockheight[1]),
@@ -350,8 +364,11 @@ export class BankrunConnection {
     const transactionStatus = await this._banksClient.getTransactionStatus(
       signature
     );
+    if (!transactionStatus) {
+      return null;
+    }
     const meta: BankrunTransactionMetaNormalized = {
-      logMessages: txMeta.meta.logMessages,
+      logMessages: txMeta.meta?.logMessages || [],
       err: txMeta.result,
     };
     return {
@@ -364,7 +381,7 @@ export class BankrunConnection {
     const txMeta = this.transactionToMeta.get(
       signature as TransactionSignature
     );
-    if (txMeta === undefined) {
+    if (txMeta === undefined || !txMeta.meta) {
       throw new Error('Transaction not found');
     }
     return txMeta.meta.computeUnitsConsumed;
@@ -374,7 +391,7 @@ export class BankrunConnection {
     const txMeta = this.transactionToMeta.get(
       signature as TransactionSignature
     );
-    if (txMeta === undefined) {
+    if (txMeta === undefined || !txMeta.meta) {
       throw new Error('Transaction not found');
     }
     console.log(txMeta.meta.logMessages);
@@ -387,22 +404,17 @@ export class BankrunConnection {
     const simulationResult = await this._banksClient.simulateTransaction(
       transaction
     );
-    const returnDataProgramId =
-      simulationResult.meta?.returnData?.programId.toBase58();
-    const returnDataNormalized = Buffer.from(
-      simulationResult.meta?.returnData?.data
-    ).toString('base64');
-    const returnData: TransactionReturnData = {
-      programId: returnDataProgramId,
-      data: [returnDataNormalized, 'base64'],
-    };
+    const returnData: TransactionReturnData | undefined = simulationResult.meta?.returnData ? {
+      programId: simulationResult.meta.returnData.programId.toBase58(),
+      data: [Buffer.from(simulationResult.meta.returnData.data).toString('base64'), 'base64'],
+    } : undefined;
     return {
       context: { slot: Number(await this._banksClient.getSlot()) },
       value: {
         err: simulationResult.result,
-        logs: simulationResult.meta.logMessages,
+        logs: simulationResult.meta?.logMessages || [],
         accounts: undefined,
-        unitsConsumed: Number(simulationResult.meta.computeUnitsConsumed),
+        unitsConsumed: Number(simulationResult.meta?.computeUnitsConsumed || 0),
         returnData,
       },
     };

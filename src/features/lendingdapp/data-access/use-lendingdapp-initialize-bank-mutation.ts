@@ -42,6 +42,9 @@ export function useLendingdappInitializeBankMutation({ account }: { account: UiW
       // Invalidate queries to refresh the UI
       await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'banks', { cluster }] })
       await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'user', { cluster }] })
+      // Invalidate token balance queries for both SOL and USDC
+      await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'token-balance', account.address, 'SOL', { cluster }] })
+      await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'token-balance', account.address, 'USDC', { cluster }] })
 
       toast.success('Lending protocol setup completed successfully! 🎉')
       toast.info('Banks are now ready for lending and borrowing operations.')

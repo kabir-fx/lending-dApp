@@ -1,12 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSolana } from '@/components/solana/use-solana'
 import { UiWalletAccount, useWalletUiSigner } from '@wallet-ui/react'
-import { useWalletUiSignAndSend } from '@wallet-ui/react-gill'
 import { address } from 'gill'
 import { getInitializeAccountInstructionAsync, getInitializeBankInstructionAsync } from '@project/anchor'
 import { toastTx } from '@/components/toast-tx'
 import { toast } from 'sonner'
-import { NATIVE_MINT } from '@solana/spl-token'
+import { NATIVE_MINT, getAssociatedTokenAddress } from '@solana/spl-token'
 import { Connection, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js'
 import { createMintToInstruction } from '@solana/spl-token'
 import { useEffect, useState } from 'react'
@@ -184,7 +183,6 @@ export function useLendingdappTokenAirdropMutation({ account }: { account: UiWal
   const { cluster } = useSolana()
   const queryClient = useQueryClient()
   const signer = useWalletUiSigner({ account })
-  const signAndSend = useWalletUiSignAndSend()
   const { config: banksConfig } = useBanksConfig()
 
   return useMutation({
@@ -198,11 +196,13 @@ export function useLendingdappTokenAirdropMutation({ account }: { account: UiWal
       // Create instructions to mint SOL and USDC tokens
       const instructions = []
 
+      const signerPublicKey = new PublicKey(signer.address);
+
       // Mint SOL tokens
       const solMintIx = createMintToInstruction(
         new PublicKey(banksConfig.SOL_MINT),
-        await signer.getAssociatedTokenAddress(new PublicKey(banksConfig.SOL_MINT)),
-        signer.address,
+        await getAssociatedTokenAddress(new PublicKey(banksConfig.SOL_MINT), signerPublicKey),
+        signerPublicKey,
         BigInt(Math.round(amount * 1_000_000_000)) // amount in lamports
       )
       instructions.push(solMintIx)
@@ -210,8 +210,8 @@ export function useLendingdappTokenAirdropMutation({ account }: { account: UiWal
       // Mint USDC tokens
       const usdcMintIx = createMintToInstruction(
         new PublicKey(banksConfig.USDC_MINT),
-        await signer.getAssociatedTokenAddress(new PublicKey(banksConfig.USDC_MINT)),
-        signer.address,
+        await getAssociatedTokenAddress(new PublicKey(banksConfig.USDC_MINT), signerPublicKey),
+        signerPublicKey,
         BigInt(Math.round(amount * 1_000_000)) // amount in smallest unit
       )
       instructions.push(usdcMintIx)
@@ -220,10 +220,14 @@ export function useLendingdappTokenAirdropMutation({ account }: { account: UiWal
       const tx = new Transaction().add(...instructions)
       const { blockhash } = await connection.getLatestBlockhash()
       tx.recentBlockhash = blockhash
-      tx.feePayer = new PublicKey(signer.address)
+      tx.feePayer = signerPublicKey
 
-      const signedTx = await signAndSend(tx, signer)
-      return signedTx
+      const phantom = window.solana
+      if (!phantom?.publicKey) throw new Error('Wallet not connected')
+      const signedTx = await phantom.signTransaction(tx)
+      const signature = await connection.sendRawTransaction(signedTx.serialize())
+      await connection.confirmTransaction(signature, 'confirmed')
+      return signature
     },
     onSuccess: async (tx) => {
       toastTx(tx)

@@ -76,6 +76,8 @@ export function useLendingdappBorrowMutation({ account }: { account: UiWalletAcc
       toastTx(tx)
       await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'user', { cluster }] })
       await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'banks', { cluster }] })
+      // Invalidate SOL token balance query since borrowing adds SOL to user's account
+      await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'token-balance', account.address, 'SOL', { cluster }] })
     },
     onError: (error) => {
       console.error('Borrow error:', error)
