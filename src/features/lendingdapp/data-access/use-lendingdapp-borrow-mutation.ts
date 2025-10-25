@@ -7,6 +7,18 @@ import { toast } from 'sonner'
 import { toastTx } from '@/components/toast-tx'
 import { Connection, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js'
 import { useBanksConfig } from './use-bank-config'
+import { AccountMeta, AccountSignerMeta } from 'gill'
+
+interface PhantomWallet {
+  publicKey: PublicKey
+  signTransaction: (transaction: Transaction) => Promise<Transaction>
+}
+
+declare global {
+  interface Window {
+    solana?: PhantomWallet
+  }
+}
 
 export function useLendingdappBorrowMutation({ account }: { account: UiWalletAccount }) {
   const { cluster } = useSolana()
@@ -16,14 +28,14 @@ export function useLendingdappBorrowMutation({ account }: { account: UiWalletAcc
 
   return useMutation({
     mutationFn: async ({ amount, priceUpdate }: { amount: number; priceUpdate: string }) => {
-      if (!banksConfig) {
+      if (!banksConfig.config?.SOL_MINT) {
         throw new Error('Bank config not loaded')
       }
 
       try {
         const connection = new Connection('http://127.0.0.1:8899', 'confirmed')
 
-        const mintAddress = address(banksConfig.config.SOL_MINT)
+        const mintAddress = address(banksConfig.config?.SOL_MINT)
         const amountInSmallestUnit = BigInt(Math.floor(amount * 1_000_000_000))
 
         const gillIx = await getBorrowInstructionAsync({
@@ -35,7 +47,7 @@ export function useLendingdappBorrowMutation({ account }: { account: UiWalletAcc
         })
 
         const web3Ix = new TransactionInstruction({
-          keys: gillIx.accounts.map((acc: any, i: number) => ({
+          keys: gillIx.accounts.map((acc: AccountMeta | AccountSignerMeta, i: number) => ({
             pubkey: new PublicKey(acc.address),
             isSigner: i === 0,
             isWritable: [0, 2, 3, 4, 5].includes(i), // signer, bank, bank_token_account, user_account, user_token_account
@@ -47,7 +59,7 @@ export function useLendingdappBorrowMutation({ account }: { account: UiWalletAcc
         const tx = new Transaction().add(web3Ix)
         const { blockhash } = await connection.getLatestBlockhash()
         tx.recentBlockhash = blockhash
-        const phantom = (window as any).solana
+        const phantom = window.solana
         if (!phantom?.publicKey) throw new Error('Wallet not connected')
         tx.feePayer = phantom.publicKey
 

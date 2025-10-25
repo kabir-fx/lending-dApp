@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import React from 'react'
 import { useLendingdappBanksQuery } from '@/features/lendingdapp/data-access/use-lendingdapp-banks-query'
 import { UserAccount } from '../lendingdapp/ui/lendingdapp-ui-dashboard'
-import { Button } from '@/components/ui/button'
 
 export default function DashboardFeature({ userAccount }: { userAccount: UserAccount }) {
   const { data: banks } = useLendingdappBanksQuery()

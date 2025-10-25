@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react"
 
+export interface BanksConfig {
+  SOL_MINT: string
+  USDC_MINT: string
+  SOL_MINT_AUTHORITY: string
+  USDC_MINT_AUTHORITY: string
+  banks_initialized: boolean
+}
+
 export function useBanksConfig() {
-    const [config, setConfig] = useState<any>(null)
+    const [config, setConfig] = useState<BanksConfig | null>(null)
     const [error, setError] = useState<string | null>(null)
   
     useEffect(() => {

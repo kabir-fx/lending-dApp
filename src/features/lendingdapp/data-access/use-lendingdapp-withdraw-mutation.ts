@@ -7,6 +7,18 @@ import { toast } from 'sonner'
 import { toastTx } from '@/components/toast-tx'
 import { Connection, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js'
 import { useBanksConfig } from './use-bank-config'
+import { AccountMeta, AccountSignerMeta } from 'gill'
+
+interface PhantomWallet {
+  publicKey: PublicKey
+  signTransaction: (transaction: Transaction) => Promise<Transaction>
+}
+
+declare global {
+  interface Window {
+    solana?: PhantomWallet
+  }
+}
 
 export function useLendingdappWithdrawMutation({ account }: { account: UiWalletAccount }) {
   const { cluster } = useSolana()
@@ -16,14 +28,14 @@ export function useLendingdappWithdrawMutation({ account }: { account: UiWalletA
 
   return useMutation({
     mutationFn: async ({ amount, token }: { amount: number; token: 'SOL' | 'USDC' }) => {
-      if (!banksConfig) {
+      if (!banksConfig.config?.SOL_MINT || !banksConfig.config?.USDC_MINT) {
         throw new Error('Bank config not loaded')
       }
 
       try {
         const connection = new Connection('http://127.0.0.1:8899', 'confirmed')
 
-        const mintAddress = address(token === 'SOL' ? banksConfig.config.SOL_MINT : banksConfig.config.USDC_MINT)
+        const mintAddress = address(token === 'SOL' ? banksConfig.config?.SOL_MINT : banksConfig.config?.USDC_MINT)
         const amountInSmallestUnit = BigInt(Math.floor(amount * (token === 'SOL' ? 1_000_000_000 : 1_000_000)))
 
         const gillIx = await getWithdrawInstructionAsync({
@@ -34,7 +46,7 @@ export function useLendingdappWithdrawMutation({ account }: { account: UiWalletA
         })
 
         const web3Ix = new TransactionInstruction({
-          keys: gillIx.accounts.map((acc: any, i: number) => ({
+          keys: gillIx.accounts.map((acc: AccountMeta | AccountSignerMeta, i: number) => ({
             pubkey: new PublicKey(acc.address),
             isSigner: i === 0,
             isWritable: [0, 2, 3, 4, 5].includes(i), // signer, bank, bank_token_account, user_account, user_token_account
@@ -47,7 +59,7 @@ export function useLendingdappWithdrawMutation({ account }: { account: UiWalletA
         const { blockhash } = await connection.getLatestBlockhash()
         tx.recentBlockhash = blockhash
 
-        const userWallet = (window as any).solana
+        const userWallet = window.solana
         if (!userWallet?.publicKey) throw new Error('Wallet not connected')
         tx.feePayer = userWallet.publicKey
 

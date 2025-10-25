@@ -10,6 +10,26 @@ import { NATIVE_MINT } from '@solana/spl-token'
 import { Connection, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js'
 import { createMintToInstruction } from '@solana/spl-token'
 import { useEffect, useState } from 'react'
+import { AccountMeta, AccountSignerMeta } from 'gill'
+
+interface PhantomWallet {
+  publicKey: PublicKey
+  signTransaction: (transaction: Transaction) => Promise<Transaction>
+}
+
+declare global {
+  interface Window {
+    solana?: PhantomWallet
+  }
+}
+
+interface BanksConfig {
+  SOL_MINT: string
+  USDC_MINT: string
+  SOL_MINT_AUTHORITY: string
+  USDC_MINT_AUTHORITY: string
+  banks_initialized: boolean
+}
 
 // A mutation is a function that changes data on the blockchain. It's like a "write" operation.
 // mutation hook for initializing the lendingdapp
@@ -37,7 +57,7 @@ export function useLendingdappInitializeBankMutation({ account }: { account: UiW
         // IMPORTANT: Only the first account (signer) should be a signer.
         // Writable accounts for initialize_bank are: signer (0), bank (2), bank_token_account (3)
         const web3Instruction = new TransactionInstruction({
-          keys: gillInstruction.accounts.map((acc: any, i: number) => ({
+          keys: gillInstruction.accounts.map((acc: AccountMeta | AccountSignerMeta, i: number) => ({
             pubkey: new PublicKey(acc.address),
             isSigner: i === 0,
             isWritable: i === 0 || i === 2 || i === 3,
@@ -50,12 +70,12 @@ export function useLendingdappInitializeBankMutation({ account }: { account: UiW
         const tx = new Transaction().add(web3Instruction)
         const { blockhash } = await connection.getLatestBlockhash()
         tx.recentBlockhash = blockhash
-        const phantom = (window as any).solana
+        const phantom = window.solana
         if (!phantom?.publicKey) throw new Error('Wallet not connected')
         tx.feePayer = phantom.publicKey
 
         // Sign and send using wallet
-        const signedTx = await (window as any).solana.signTransaction(tx)
+        const signedTx = await phantom.signTransaction(tx)
         const signature = await connection.sendRawTransaction(signedTx.serialize())
         await connection.confirmTransaction(signature, 'confirmed')
         
@@ -70,8 +90,6 @@ export function useLendingdappInitializeBankMutation({ account }: { account: UiW
       await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'banks', { cluster }] })
     },
     onError: (e) => {
-      // Surface the actual error for easier debugging in UI
-      // eslint-disable-next-line no-console
       console.error('Initialize bank error:', e)
       toast.error(`Failed to initialize bank: ${e instanceof Error ? e.message : String(e)}`)
     },
@@ -96,7 +114,7 @@ export function useLendingdappInitializeAccountMutation({ account }: { account: 
 
         // Convert gill instruction to web3.js TransactionInstruction.
         const web3Instruction = new TransactionInstruction({
-          keys: gillInstruction.accounts.map((acc: any, i: number) => ({
+          keys: gillInstruction.accounts.map((acc: AccountMeta | AccountSignerMeta, i: number) => ({
             pubkey: new PublicKey(acc.address),
             isSigner: i === 0,
             isWritable: i === 0 || i === 2 || i === 3,
@@ -109,12 +127,12 @@ export function useLendingdappInitializeAccountMutation({ account }: { account: 
         const tx = new Transaction().add(web3Instruction)
         const { blockhash } = await connection.getLatestBlockhash()
         tx.recentBlockhash = blockhash
-        const phantom = (window as any).solana
+        const phantom = window.solana
         if (!phantom?.publicKey) throw new Error('Wallet not connected')
         tx.feePayer = phantom.publicKey
 
         // Sign and send using wallet
-        const signedTx = await (window as any).solana.signTransaction(tx)
+        const signedTx = await phantom.signTransaction(tx)
         const signature = await connection.sendRawTransaction(signedTx.serialize())
         await connection.confirmTransaction(signature, 'confirmed')
         
@@ -129,7 +147,6 @@ export function useLendingdappInitializeAccountMutation({ account }: { account: 
       await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'accounts', { cluster }] })
     },
     onError: (e) => {
-      // eslint-disable-next-line no-console
       console.error('Initialize account error:', e)
       toast.error(`Failed to initialize account: ${e instanceof Error ? e.message : String(e)}`)
     },
@@ -138,7 +155,7 @@ export function useLendingdappInitializeAccountMutation({ account }: { account: 
 
 // Load config from the setup script
 function useBanksConfig() {
-  const [config, setConfig] = useState<any>(null)
+  const [config, setConfig] = useState<BanksConfig | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {

@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UiWalletAccount } from '@wallet-ui/react'
-import { LendingdappUiBorrow } from './lendingdapp-ui-borrow'
 import { LendingdappUiWithdraw } from './lendingdapp-ui-withdraw'
 import { LendingdappUiDeposit } from './lendingdapp-ui-deposit'
 
