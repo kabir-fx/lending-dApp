@@ -67,40 +67,6 @@ export default function LendingdappFeature() {
                 <LendingdappUiInitializeAccount account={account} />
               </CardContent>
             </Card>
-
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-xl">Get Test Tokens</CardTitle>
-                <p className="text-sm text-gray-600">To test the lending protocol, you need some test tokens</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    The setup script created custom SOL and USDC tokens for testing. Use the faucet command to get test tokens:
-                  </p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg font-mono text-sm">
-                  <p className="text-gray-800">npm run faucet {account.address}</p>
-                </div>
-                <div className="space-y-2">
-                  <h4 className="font-medium text-sm">What this does:</h4>
-                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                    <li>Mints 5 SOL worth of custom tokens to your wallet</li>
-                    <li>Mints 1000 USDC worth of custom tokens to your wallet</li>
-                    <li>Run this command in a terminal where the project is set up</li>
-                  </ul>
-                  <p className="text-sm text-green-600 font-medium mt-2">
-                    ✅ You can now deposit and withdraw both SOL and USDC tokens!
-                  </p>
-                </div>
-                <div className="bg-yellow-50 p-4 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Note:</strong> These are custom tokens created specifically for this lending protocol demo.
-                    They are not real SOL or USDC and only work within this test environment.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         ) : userAccount ? (
           <div className="max-w-6xl mx-auto">

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import React from 'react'
 import { useLendingdappBanksQuery } from '@/features/lendingdapp/data-access/use-lendingdapp-banks-query'
 import { UserAccount } from '../lendingdapp/ui/lendingdapp-ui-dashboard'
+import { Button } from '@/components/ui/button'
 
 export default function DashboardFeature({ userAccount }: { userAccount: UserAccount }) {
   const { data: banks } = useLendingdappBanksQuery()
@@ -39,7 +40,11 @@ export default function DashboardFeature({ userAccount }: { userAccount: UserAcc
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <div className="animate-pulse">Loading bank data...</div>
+              <div className="animate-pulse">
+                Loading bank data...
+                <br />
+              </div>
+                Go to Actions page to initialize the banks
             </div>
           )}
         </CardContent>

@@ -43,7 +43,7 @@ export function LendingdappUiDashboard({
           <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
             <h4 className="font-medium text-green-800 mb-2">✅ Full Functionality Available</h4>
             <p className="text-sm text-green-700">
-              You can now deposit and withdraw both SOL and USDC tokens. Borrow functionality is coming soon.
+              You can now deposit and withdraw both SOL and USDC tokens. Borrowing and liquidating functionalities are coming soon.
             </p>
           </div>
         </CardContent>

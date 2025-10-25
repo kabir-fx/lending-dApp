@@ -96,8 +96,12 @@ export function useLendingdappDepositMutation({ account }: { account: UiWalletAc
       toastTx(tx)
 
       // Invalidates queries to refresh user balance and bank data on the UI after successful deposit
-      await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'user', { cluster }] })
+      await queryClient.invalidateQueries({ 
+        queryKey: ['lendingdapp', 'user', account.address.toString(), { cluster }] 
+      })
       await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'banks', { cluster }] })
+
+      window.location.reload()
     },
     onError: (error) => {
       console.error('Deposit error:', error)

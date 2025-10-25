@@ -50,7 +50,7 @@ export function useLendingdappInitializeBankMutation({ account }: { account: UiW
       console.error('Bank setup error:', error)
       const errorMessage = error instanceof Error ? error.message : String(error)
 
-      toast.error(`Failed to setup lending protocol: ${errorMessage}`)
+      toast.error(`Deploy the anchor program first!!: ${errorMessage}`)
     },
   })
 }

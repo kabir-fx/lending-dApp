@@ -27,7 +27,14 @@ export function useLendingdappInitializeAccountMutation({ account }: { account: 
     },
     onSuccess: async (tx) => {
       toastTx(tx)
-      await queryClient.invalidateQueries({ queryKey: ['lendingdapp', 'user', { cluster }] })
+      
+      // Wait a bit for the transaction to be confirmed on the blockchain
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Invalidate user account queries with the correct query key pattern
+      await queryClient.invalidateQueries({ 
+        queryKey: ['lendingdapp', 'user', account.address.toString(), { cluster }] 
+      })
     },
     onError: (error) => {
       console.error('Initialize account error:', error)
