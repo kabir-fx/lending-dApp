@@ -1,113 +1,130 @@
-# lending-dapp
+# Lending Protocol dApp
 
-This is a Next.js app containing:
+A decentralized lending protocol built on Solana, enabling users to deposit assets to earn interest and borrow against their collateral. Built with modern web technologies and Anchor framework.
 
-- Tailwind and Shadcn UI for styling
-- [Gill](https://gill.site/) Solana SDK
-- Shadcn [Wallet UI](https://registry.wallet-ui.dev) components
-- A basic Counter Solana program written in Anchor
-- [codama](https://github.com/codama-idl/codama) to generate a JS sdk for the program
-- UI components for interacting with the program
+## 🚀 Features
 
-## Getting Started
+- **🏦 Multi-Asset Lending**: Support for SOL and USDC tokens
+- **💰 Earn Interest**: Deposit tokens to earn yields from borrowers
+- **🏗️ Decentralized**: Fully on-chain lending protocol using Anchor
+- **🔒 Secure**: Built with Anchor's security best practices
+- **📱 Modern UI**: Clean, responsive interface with wallet integration
+- **⚡ Real-time**: Live price feeds via Pyth Network
+- **🔄 Borrowing & Liquidation**: Full lending protocol with risk management
 
-### Installation
+## 🛠️ Tech Stack
 
-#### Download the template
+- **Backend**: [Anchor](https://www.anchor-lang.com/) - Solana's framework for Solana programs
+- **Frontend**: [Next.js 15](https://nextjs.org/) with [React 19](https://react.dev/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) + [Shadcn UI](https://ui.shadcn.com/)
+- **Solana SDK**: [Gill](https://gill.site/) - Type-safe Solana SDK
+- **Wallet**: [Wallet UI](https://registry.wallet-ui.dev) components
+- **Code Generation**: [Codama](https://github.com/codama-idl/codama) for IDL-to-TypeScript
+- **Price Feeds**: [Pyth Network](https://pyth.network/) for real-time asset prices
 
-```shell
-npx create-solana-dapp@latest -t gh:solana-foundation/templates/gill/lending-dapp
-```
+## 📋 Prerequisites
 
-#### Install Dependencies
+- [Node.js](https://nodejs.org/) (v18 or higher)
+- [Rust](https://rustup.rs/) (latest stable)
+- [Solana CLI](https://docs.solana.com/cli/install-solana-cli-tools)
+- [Anchor Framework](https://www.anchor-lang.com/docs/installation)
 
-```shell
+## 🚀 Quick Start
+
+### 1. Clone and Install
+
+```bash
+# Clone the repository
+git clone https://github.com/kabir-fx/lending-dApp.git
+
+# Install dependencies
 npm install
 ```
 
-## Apps
+### 2. Setup Development Environment
 
-### anchor
-
-This is a Solana program written in Rust using the Anchor framework.
-
-#### Commands
-
-You can use any normal anchor commands. Either move to the `anchor` directory and run the `anchor` command or prefix the
-command with `npm`, eg: `npm run anchor`.
-
-#### Sync the program id:
-
-Running this command will create a new keypair in the `anchor/target/deploy` directory and save the address to the
-Anchor config file and update the `declare_id!` macro in the `./src/lib.rs` file of the program. This will also update
-the constant in the `anchor/src/counter-exports.ts` file.
-
-```shell
+```bash
+# Initialize Anchor program and generate client SDK
 npm run setup
 ```
 
-#### Build the program:
+### 3. Start Local Development
 
-```shell
-npm run anchor-build
-```
+```bash
+# Terminal 1: Set the CLI to localnet
+solana config set --url http://localhost:8899
 
-#### Start the test validator with the program deployed:
+# Terminal 1: Start Solana localnet
+solana-test-validator                                       
 
-```shell
-npm run anchor-localnet
-```
+# Terminal 2: Builf the Anchor program 
+npm run anchor build
 
-#### Run the tests
+# Terminal 2: Deploy the Anchor program
+npm run anchor deploy
 
-```shell
-npm run anchor-test
-```
+# [OPTIONAL] Terminal 2: Setup banks with initial liquidity 
+npm run faucet [your_wallet_address]
 
-#### Deploy to Devnet
-
-```shell
-npm run anchor deploy --provider.cluster devnet
-```
-
-#### Setup Lending Banks (Localnet)
-
-The lending protocol requires pre-initialized banks with liquidity. For localnet testing:
-
-```shell
-# Reset localnet and start fresh
-npm run reset-localnet
-npm run anchor-localnet &  # Start in background
-
-# Deploy program and setup banks
-sleep 3 && npm run anchor deploy --provider.cluster localnet
-npm run setup-banks
-
-# Or use the combined script (may need manual timing)
-npm run localnet-with-banks
-```
-
-This creates:
-- Custom SOL Token Bank with 10 SOL-equivalent liquidity
-- USDC Bank with 10 USDC liquidity
-- Both banks are pre-funded and ready for lending/borrowing
-
-**Note:** Uses custom tokens for localnet testing to avoid PDA conflicts with native SOL.
-
-### web
-
-This is a React app that uses the Anchor generated client to interact with the Solana program.
-
-#### Commands
-
-Start the app
-
-```shell
+# Terminal 3: Start the web app
 npm run dev
 ```
 
-Build the app
+Visit [http://localhost:3000](http://localhost:3000) to access the dApp.
 
-```shell
-npm run build
-```
+## 📖 Usage Guide
+
+### For Users
+
+1. **Connect Wallet**: Click "Connect Wallet" and select your preferred Solana wallet
+2. **Setup Protocol**: If it's your first time, click "Setup Lending Protocol" to initialize banks
+3. **Initialize Account**: Create your lending account
+4. **Deposit Assets**: Add SOL or USDC to start earning interest
+5. **Withdraw Assets**: Remove your deposited tokens anytime
+6. **Borrow Assets**: Use your deposits as collateral to borrow (coming soon)
+
+### Core Contracts
+
+- **Bank**: Manages asset pools, interest rates, and risk parameters
+- **User Account**: Tracks individual user positions and balances
+- **Price Feeds**: Pyth Network integration for accurate valuations
+
+### Key Features
+
+- **Liquidation Threshold**: 80% - Position health monitoring
+- **Max LTV**: 70% - Maximum borrowable amount
+- **Interest Accrual**: Automatic interest calculation
+- **Risk Management**: Built-in liquidation mechanisms
+
+### Supported Assets
+
+- **SOL**: Native Solana token
+- **USDC**: USD stablecoin
+
+## 🔧 Configuration
+
+### Program IDs
+
+Program addresses are automatically read from the IDL file, ensuring consistency across deployments.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Make your changes
+4. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## ⚠️ Disclaimer
+
+This is a demo lending protocol for educational purposes. Not intended for production use without thorough security audits and testing.
+
+## 🆘 Support
+
+- [Anchor Documentation](https://www.anchor-lang.com/docs/)
+- [Solana Documentation](https://docs.solana.com/)
+- [Gill SDK Documentation](https://gill.site/)
+- [Pyth Network Docs](https://docs.pyth.network/)
