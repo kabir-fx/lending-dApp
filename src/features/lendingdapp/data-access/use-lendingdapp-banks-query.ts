@@ -3,34 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { address, getProgramDerivedAddress, getAddressEncoder, fetchEncodedAccount } from 'gill'
 import { Bank, fetchMaybeBank } from '@project/anchor'
 import { LENDING_PROTOCOL_PROGRAM_ADDRESS } from '@project/anchor'
-import { useEffect, useState } from 'react'
-
-// Load config from the setup script using a hook. The config file is static data that doesn't change, so we load it once and reuse it.
-function useBanksConfig() {
-  const [config, setConfig] = useState<any>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetch('/anchor/banks-config.json')
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`)
-        }
-        return res.json()
-      })
-      .then(data => {
-        setConfig(data)
-        setError(null)
-      })
-      .catch(err => {
-        console.error('Failed to load banks config:', err)
-        setError(err.message)
-        setConfig(null)
-      })
-  }, [])
-
-  return { config, error }
-}
+import { useBanksConfig } from './use-bank-config'
 
 async function confirmBankExists(
   mint: string,

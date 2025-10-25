@@ -22,21 +22,19 @@ export function LendingdappUiDeposit({ account }: { account: UiWalletAccount }) 
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
         <button
           onClick={() => setSelectedToken('SOL')}
-          className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
-            selectedToken === 'SOL'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
+          className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${selectedToken === 'SOL'
+            ? 'bg-white text-gray-900 shadow-sm'
+            : 'text-gray-600 hover:text-gray-900'
+            }`}
         >
           SOL
         </button>
         <button
           onClick={() => setSelectedToken('USDC')}
-          className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
-            selectedToken === 'USDC'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
+          className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${selectedToken === 'USDC'
+            ? 'bg-white text-gray-900 shadow-sm'
+            : 'text-gray-600 hover:text-gray-900'
+            }`}
         >
           USDC
         </button>

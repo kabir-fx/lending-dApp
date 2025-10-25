@@ -5,36 +5,7 @@ import { useWalletUiSignAndSend } from '@wallet-ui/react-gill'
 import { getInitializeAccountInstructionAsync } from '@project/anchor'
 import { toastTx } from '@/components/toast-tx'
 import { toast } from 'sonner'
-import { NATIVE_MINT } from '@solana/spl-token'
-import { address } from 'gill'
-import { useEffect, useState } from 'react'
-
-// Load config from the setup script
-function useBanksConfig() {
-  const [config, setConfig] = useState<any>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetch('/anchor/banks-config.json')
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`)
-        }
-        return res.json()
-      })
-      .then(data => {
-        setConfig(data)
-        setError(null)
-      })
-      .catch(err => {
-        console.error('Failed to load banks config:', err)
-        setError(err.message)
-        setConfig(null)
-      })
-  }, [])
-
-  return { config, error }
-}
+import { useBanksConfig } from './use-bank-config'
 
 export function useLendingdappInitializeAccountMutation({ account }: { account: UiWalletAccount }) {
   const { cluster } = useSolana()

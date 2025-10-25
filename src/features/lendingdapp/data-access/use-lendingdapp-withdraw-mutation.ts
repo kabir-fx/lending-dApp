@@ -6,21 +6,7 @@ import { getWithdrawInstructionAsync, TokenType } from '@project/anchor'
 import { toast } from 'sonner'
 import { toastTx } from '@/components/toast-tx'
 import { Connection, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js'
-import { useEffect, useState } from 'react'
-
-// Load config from the setup script
-function useBanksConfig() {
-  const [config, setConfig] = useState<any>(null)
-
-  useEffect(() => {
-    fetch('/anchor/banks-config.json')
-      .then(res => res.json())
-      .then(setConfig)
-      .catch(() => setConfig(null))
-  }, [])
-
-  return config
-}
+import { useBanksConfig } from './use-bank-config'
 
 export function useLendingdappWithdrawMutation({ account }: { account: UiWalletAccount }) {
   const { cluster } = useSolana()
@@ -37,7 +23,7 @@ export function useLendingdappWithdrawMutation({ account }: { account: UiWalletA
       try {
         const connection = new Connection('http://127.0.0.1:8899', 'confirmed')
 
-        const mintAddress = address(token === 'SOL' ? banksConfig.SOL_MINT : banksConfig.USDC_MINT)
+        const mintAddress = address(token === 'SOL' ? banksConfig.config.SOL_MINT : banksConfig.config.USDC_MINT)
         const amountInSmallestUnit = BigInt(Math.floor(amount * (token === 'SOL' ? 1_000_000_000 : 1_000_000)))
 
         const gillIx = await getWithdrawInstructionAsync({

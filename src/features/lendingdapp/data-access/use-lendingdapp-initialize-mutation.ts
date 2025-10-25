@@ -92,7 +92,6 @@ export function useLendingdappInitializeAccountMutation({ account }: { account: 
         
         const gillInstruction = await getInitializeAccountInstructionAsync({
           signer,
-          usdcAddress: address(NATIVE_MINT.toString()),
         })
 
         // Convert gill instruction to web3.js TransactionInstruction.
@@ -204,7 +203,7 @@ export function useLendingdappTokenAirdropMutation({ account }: { account: UiWal
       const tx = new Transaction().add(...instructions)
       const { blockhash } = await connection.getLatestBlockhash()
       tx.recentBlockhash = blockhash
-      tx.feePayer = signer.address
+      tx.feePayer = new PublicKey(signer.address)
 
       const signedTx = await signAndSend(tx, signer)
       return signedTx

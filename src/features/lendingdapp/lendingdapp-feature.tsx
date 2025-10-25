@@ -6,6 +6,7 @@ import { LendingdappUiInitializeAccount } from './ui/lendingdapp-ui-initialize-a
 import { LendingdappUiDashboard } from './ui/lendingdapp-ui-dashboard'
 import { useLendingdappUserAccount } from './data-access/use-lendingdapp-user-account'
 import { useLendingdappBanksQuery } from './data-access/use-lendingdapp-banks-query'
+import { InitialEntry } from './ui/intial-entry'
 
 export default function LendingdappFeature() {
   const { account } = useSolana()
@@ -31,26 +32,13 @@ export default function LendingdappFeature() {
   // Show error if banks query failed or no banks exist after loading is complete
   if (banksError || (banks && banks.length === 0)) {
     return (
-      <div>
-        <AppHero
-          title="Lending Protocol"
-          subtitle="Banks not available"
-        >
-          <div className="text-center space-y-4">
-            {banksError ? (
-              <>
-                <p>Error loading banks: {banksError.message}</p>
-                <p>Please check your connection and try again.</p>
-              </>
-            ) : (
-              <>
-                <p>The lending protocol banks haven't been set up yet.</p>
-                <p>Please run <code className="bg-gray-100 px-2 py-1 rounded">npm run setup-banks</code> first.</p>
-              </>
-            )}
-          </div>
-        </AppHero>
-      </div>
+      account ? (
+        <div>
+          <InitialEntry account={account} />
+        </div>
+      ) : (
+        <WalletDropdown />
+      )
     )
   }
 

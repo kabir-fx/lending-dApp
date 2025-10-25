@@ -2,25 +2,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { UiWalletAccount, useWalletUiSigner } from '@wallet-ui/react'
 import { useSolana } from '@/components/solana/use-solana'
 import { address } from 'gill'
-import { getBorrowInstructionAsync } from '@project/anchor'
+import { getBorrowInstructionAsync, TokenType } from '@project/anchor'
 import { toast } from 'sonner'
 import { toastTx } from '@/components/toast-tx'
 import { Connection, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js'
-import { useEffect, useState } from 'react'
-
-// Load config from the setup script
-function useBanksConfig() {
-  const [config, setConfig] = useState<any>(null)
-
-  useEffect(() => {
-    fetch('/anchor/banks-config.json')
-      .then(res => res.json())
-      .then(setConfig)
-      .catch(() => setConfig(null))
-  }, [])
-
-  return config
-}
+import { useBanksConfig } from './use-bank-config'
 
 export function useLendingdappBorrowMutation({ account }: { account: UiWalletAccount }) {
   const { cluster } = useSolana()
@@ -37,14 +23,15 @@ export function useLendingdappBorrowMutation({ account }: { account: UiWalletAcc
       try {
         const connection = new Connection('http://127.0.0.1:8899', 'confirmed')
 
-        const mintAddress = address(banksConfig.SOL_MINT)
+        const mintAddress = address(banksConfig.config.SOL_MINT)
         const amountInSmallestUnit = BigInt(Math.floor(amount * 1_000_000_000))
 
         const gillIx = await getBorrowInstructionAsync({
           signer,
           mint: mintAddress,
           priceUpdate: address(priceUpdate),
-          amountToBorrow: amountInSmallestUnit
+          amountToBorrow: amountInSmallestUnit,
+          tokenType: TokenType.SOL
         })
 
         const web3Ix = new TransactionInstruction({
