@@ -12,7 +12,7 @@ mod instructions;
 mod state;
 use crate::state::TokenType;
 
-declare_id!("9CoY42r3y5WFDJjQX97e9m9THcVGpvuVSKjBjGkiksMR");
+declare_id!("H3nXZdjSdx4UwaeKRR2o2v6whsRCoKyrbLvDBMCViUD9");
 
 #[program]
 pub mod lending_protocol {

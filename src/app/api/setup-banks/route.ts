@@ -241,7 +241,7 @@ async function initializeAndFundBank(
   // 4. Deposit tokens into the bank
   console.log(`💰 Depositing ${displayAmount} ${tokenName} into bank...`)
 
-  const PROGRAM_ID = "9CoY42r3y5WFDJjQX97e9m9THcVGpvuVSKjBjGkiksMR"
+  const PROGRAM_ID = getProgramId()
 
   const [derivedBankAddress] = PublicKey.findProgramAddressSync(
     [mint.toBuffer()],
@@ -333,4 +333,15 @@ async function mintTokensToUser(
     1000 * 1_000_000 // 1000 USDC
   )
   console.log('✅ Minted 1000 USDC to user')
+}
+
+function getProgramId(): string {
+  try {
+    const idlPath = path.join(process.cwd(), 'anchor', 'target', 'idl', 'lending_protocol.json')
+    const idlContent = JSON.parse(fs.readFileSync(idlPath, 'utf-8'))
+    return idlContent.address
+  } catch (error) {
+    console.error('Failed to read program ID from IDL:', error)
+    throw new Error('Could not determine program ID. Make sure the program is deployed and IDL is generated.')
+  }
 }

@@ -1,20 +1,16 @@
 [toolchain]
 anchor_version = "0.30.1"
-package_manager = "yarn"
 
 [features]
 resolution = true
 skip-lint = false
 
 [programs.localnet]
-lending_protocol = "9CoY42r3y5WFDJjQX97e9m9THcVGpvuVSKjBjGkiksMR"
+lending_protocol = "H3nXZdjSdx4UwaeKRR2o2v6whsRCoKyrbLvDBMCViUD9"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "Localnet"
 wallet = "~/.config/solana/id.json"
-
-[scripts]
-

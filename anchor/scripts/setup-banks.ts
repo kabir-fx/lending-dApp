@@ -15,6 +15,7 @@ import { address } from 'gill'
 import { createKeyPairSignerFromBytes, KeyPairSigner } from '@solana/signers'
 import fs from 'fs'
 import { TokenType } from '@project/anchor'
+import path from 'path'
 
 async function main() {
   const connection = new Connection('http://127.0.0.1:8899', 'confirmed')
@@ -318,7 +319,7 @@ async function initializeAndFundBank(
   console.log(`💰 Depositing ${amount / (tokenName === 'SOL' ? LAMPORTS_PER_SOL : 1_000_000)} ${tokenName} into bank...`)
 
   // PROGRAM that owns/controls all PDAs
-  const PROGRAM_ID = "9CoY42r3y5WFDJjQX97e9m9THcVGpvuVSKjBjGkiksMR"
+  const PROGRAM_ID = getProgramId()
 
   // Derive the required PDA addresses
   const [derivedBankAddress] = PublicKey.findProgramAddressSync(
@@ -389,6 +390,17 @@ async function initializeAndFundBank(
 
   const depositSig = await sendAndConfirmTransaction(connection, depositTx, [deployer])
   console.log(`✅ ${tokenName} deposited into bank: ${depositSig}`)
+}
+
+function getProgramId(): string {
+  try {
+    const idlPath = path.join(process.cwd(), 'target', 'idl', 'lending_protocol.json')
+    const idlContent = JSON.parse(fs.readFileSync(idlPath, 'utf-8'))
+    return idlContent.address
+  } catch (error) {
+    console.error('Failed to read program ID from IDL:', error)
+    throw new Error('Could not determine program ID. Make sure the program is deployed and IDL is generated.')
+  }
 }
 
 main().catch(console.error)
