@@ -60,7 +60,7 @@ export function LendingdappUiDeposit({ account }: { account: UiWalletAccount }) 
         />
         {balance !== undefined && balance === 0 && (
           <p className="text-xs text-red-500">
-            You don't have any test {selectedToken} tokens. Run <code className="bg-red-100 px-1 rounded">npm run faucet {account.address}</code> to get test tokens.
+            You don&apos;t have any test {selectedToken} tokens. Run <code className="bg-red-100 px-1 rounded">npm run faucet {account.address}</code> to get test tokens.
           </p>
         )}
       </div>

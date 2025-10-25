@@ -6,12 +6,14 @@ import { LendingdappUiInitializeAccount } from './ui/lendingdapp-ui-initialize-a
 import { LendingdappUiDashboard } from './ui/lendingdapp-ui-dashboard'
 import { useLendingdappUserAccount } from './data-access/use-lendingdapp-user-account'
 import { useLendingdappBanksQuery } from './data-access/use-lendingdapp-banks-query'
-import { InitialEntry } from './ui/intial-entry'
+import { InitialEntry } from './ui/initial-entry'
+import { useBanksConfig } from './data-access/use-bank-config'
 
 export default function LendingdappFeature() {
   const { account } = useSolana()
   const { data: userAccount } = useLendingdappUserAccount(account?.address)
   const { data: banks, isLoading: banksLoading, error: banksError } = useLendingdappBanksQuery()
+  const { config: banksConfig, error: banksConfigError } = useBanksConfig()
 
   // Show loading if banks are still loading (this includes waiting for config)
   if (banksLoading) {
@@ -29,8 +31,8 @@ export default function LendingdappFeature() {
     )
   }
 
-  // Show error if banks query failed or no banks exist after loading is complete
-  if (banksError || (banks && banks.length === 0)) {
+  // Show setup UI if banks config doesn't exist or banks query failed or no banks exist
+  if (!banksConfig || banksConfigError || banksError || (banks && banks.length === 0)) {
     return (
       account ? (
         <div>

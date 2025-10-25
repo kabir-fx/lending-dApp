@@ -1,11 +1,10 @@
 import { ReactNode } from 'react'
-import { createSolanaDevnet, createSolanaLocalnet, createWalletUiConfig, WalletUi } from '@wallet-ui/react'
+import { createSolanaLocalnet, createWalletUiConfig, WalletUi } from '@wallet-ui/react'
 import { WalletUiGillProvider } from '@wallet-ui/react-gill'
 import { solanaMobileWalletAdapter } from './solana-mobile-wallet-adapter'
 
 const config = createWalletUiConfig({
   clusters: [createSolanaLocalnet({ url: 'http://127.0.0.1:8899' })],
-  defaultCluster: 'solana:localnet',
 })
 
 solanaMobileWalletAdapter({ clusters: config.clusters })
