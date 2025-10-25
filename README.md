@@ -41,14 +41,7 @@ git clone https://github.com/kabir-fx/lending-dApp.git
 npm install
 ```
 
-### 2. Setup Development Environment
-
-```bash
-# Initialize Anchor program and generate client SDK
-npm run setup
-```
-
-### 3. Start Local Development
+### 2. Start Local Development
 
 ```bash
 # Terminal 1: Set the CLI to localnet
@@ -57,8 +50,8 @@ solana config set --url http://localhost:8899
 # Terminal 1: Start Solana localnet
 solana-test-validator                                       
 
-# Terminal 2: Builf the Anchor program 
-npm run anchor build
+# Terminal 2: Initialize Anchor program and generate client SDK
+npm run setup
 
 # Terminal 2: Deploy the Anchor program
 npm run anchor deploy

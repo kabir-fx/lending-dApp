@@ -24,7 +24,7 @@ import {
 } from '../instructions';
 
 export const LENDING_PROTOCOL_PROGRAM_ADDRESS =
-  'H3nXZdjSdx4UwaeKRR2o2v6whsRCoKyrbLvDBMCViUD9' as Address<'H3nXZdjSdx4UwaeKRR2o2v6whsRCoKyrbLvDBMCViUD9'>;
+  'DJnJEZN1tBRsPcK1UL6GY4dD58Zp81eXUMaRCJaWMNEB' as Address<'DJnJEZN1tBRsPcK1UL6GY4dD58Zp81eXUMaRCJaWMNEB'>;
 
 export enum LendingProtocolAccount {
   Bank,
@@ -171,7 +171,7 @@ export function identifyLendingProtocolInstruction(
 }
 
 export type ParsedLendingProtocolInstruction<
-  TProgram extends string = 'H3nXZdjSdx4UwaeKRR2o2v6whsRCoKyrbLvDBMCViUD9',
+  TProgram extends string = 'DJnJEZN1tBRsPcK1UL6GY4dD58Zp81eXUMaRCJaWMNEB',
 > =
   | ({
       instructionType: LendingProtocolInstruction.Borrow;
